@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Habity</title>
+<meta name="theme-color" content="#15120E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Habity">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%2315120E'/%3E%3Cg fill='%2374955E'%3E%3Crect x='40' y='52' width='20' height='20' rx='4'/%3E%3Crect x='68' y='52' width='20' height='20' rx='4' fill='%23BC5B43'/%3E%3Crect x='96' y='52' width='20' height='20' rx='4'/%3E%3Crect x='124' y='52' width='20' height='20' rx='4' fill='%2334302A'/%3E%3Crect x='40' y='80' width='20' height='20' rx='4' fill='%2334302A'/%3E%3Crect x='68' y='80' width='20' height='20' rx='4'/%3E%3Crect x='96' y='80' width='20' height='20' rx='4'/%3E%3Crect x='124' y='80' width='20' height='20' rx='4' fill='%23BC5B43'/%3E%3Crect x='40' y='108' width='20' height='20' rx='4' fill='%23BC5B43'/%3E%3Crect x='68' y='108' width='20' height='20' rx='4'/%3E%3Crect x='96' y='108' width='20' height='20' rx='4' fill='%2334302A'/%3E%3Crect x='124' y='108' width='20' height='20' rx='4'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Habity%22%2C%22short_name%22%3A%22Habity%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%2315120E%22%2C%22theme_color%22%3A%22%2315120E%22%2C%22start_url%22%3A%22.%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%253D%2527http%253A%252F%252Fwww.w3.org%252F2000%252Fsvg%2527%2520viewBox%253D%25270%25200%2520180%2520180%2527%253E%253Crect%2520width%253D%2527180%2527%2520height%253D%2527180%2527%2520rx%253D%252740%2527%2520fill%253D%2527%252315120E%2527%252F%253E%253Cg%2520fill%253D%2527%252374955E%2527%253E%253Crect%2520x%253D%252740%2527%2520y%253D%252752%2527%2520width%253D%252720%2527%2520height%253D%252720%2527%2520rx%253D%25274%2527%252F%253E%253C%252Fg%253E%253C%252Fsvg%253E%22%2C%22sizes%22%3A%22180x180%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+<style>
+  :root{
+    --bg:#15120E;
+    --surface:#201B15;
+    --surface2:#2A241C;
+    --border:#3A332A;
+    --text:#EDE6D8;
+    --dim:#9A9081;
+    --empty:#34302A;
+    --done:#74955E;
+    --missed:#BC5B43;
+    --accent:#D9A441;
+    --serif:Georgia,'Times New Roman',ui-serif,serif;
+    --sans:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;
+    --mono:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);color:var(--text);font-family:var(--sans);
+    font-size:16px;line-height:1.4;
+    padding-bottom:calc(72px + env(safe-area-inset-bottom));
+    -webkit-user-select:none;user-select:none;
+    overflow-x:hidden;
+  }
+  .wrap{max-width:560px;margin:0 auto;padding:0 16px;}
+  header{
+    padding:calc(20px + env(safe-area-inset-top)) 16px 12px;
+    display:flex;align-items:baseline;justify-content:space-between;
+    max-width:560px;margin:0 auto;
+  }
+  header h1{font-family:var(--serif);font-weight:500;font-size:26px;margin:0;letter-spacing:.3px;}
+  header .date{font-family:var(--mono);font-size:12px;color:var(--dim);}
+
+  /* ---- pages ---- */
+  .page{display:none;}
+  .page.active{display:block;}
+
+  /* ---- today cards ---- */
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:10px;
+    padding:7px 8px 7px 12px;margin-bottom:6px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .card .name{font-family:var(--serif);font-size:16px;line-height:1.25;flex:1;min-width:0;word-break:break-word;cursor:pointer;}
+  .card .prio{font-family:var(--mono);font-size:10px;color:var(--dim);flex-shrink:0;}
+  .toggles{display:flex;gap:6px;flex-shrink:0;}
+  .tg{
+    width:38px;height:38px;border-radius:9px;border:1px solid var(--border);
+    background:var(--surface2);color:var(--dim);font-size:17px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:all .12s ease;
+  }
+  .tg.yes.on{background:var(--done);border-color:var(--done);color:#16130E;}
+  .tg.no.on{background:var(--missed);border-color:var(--missed);color:#16130E;}
+  .tg:active{transform:scale(.92);}
+
+  /* ---- overview ---- */
+  .legend{
+    display:flex;gap:16px;font-family:var(--mono);font-size:11px;color:var(--dim);
+    margin:4px 0 18px;flex-wrap:wrap;
+  }
+  .legend span{display:flex;align-items:center;gap:6px;}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block;}
+  .hblock{margin-bottom:24px;}
+  .hhead{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;cursor:pointer;}
+  .hhead .name{font-family:var(--serif);font-size:17px;}
+  .hhead .prio{font-family:var(--mono);font-size:11px;color:var(--dim);}
+  .hhead .stat{font-family:var(--mono);font-size:11px;color:var(--done);margin-left:auto;}
+  .hhead .chev{color:var(--dim);font-size:12px;}
+  .grid{
+    display:grid;grid-template-columns:repeat(30,1fr);gap:3px;
+  }
+  .cell{
+    aspect-ratio:1;border-radius:2px;background:var(--empty);cursor:pointer;
+  }
+  .cell.done{background:var(--done);}
+  .cell.missed{background:var(--missed);}
+  .cell.today{box-shadow:0 0 0 1.5px var(--accent);}
+
+  /* ---- empty state ---- */
+  .empty-state{
+    text-align:center;color:var(--dim);font-family:var(--serif);
+    font-size:16px;padding:60px 20px;line-height:1.6;
+  }
+
+  /* ---- add button ---- */
+  .fab{
+    position:fixed;right:max(16px,env(safe-area-inset-right));
+    bottom:calc(84px + env(safe-area-inset-bottom));
+    width:56px;height:56px;border-radius:50%;border:none;
+    background:var(--accent);color:#15120E;font-size:30px;line-height:1;
+    box-shadow:0 6px 20px rgba(0,0,0,.5);cursor:pointer;z-index:30;
+  }
+  .fab:active{transform:scale(.94);}
+
+  /* ---- tab bar ---- */
+  .tabs{
+    position:fixed;bottom:0;left:0;right:0;z-index:20;
+    background:rgba(21,18,14,.92);backdrop-filter:blur(12px);
+    border-top:1px solid var(--border);
+    display:flex;padding-bottom:env(safe-area-inset-bottom);
+  }
+  .tab{
+    flex:1;background:none;border:none;color:var(--dim);
+    padding:14px 0 12px;font-family:var(--sans);font-size:13px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+  }
+  .tab .ic{font-size:18px;}
+  .tab.active{color:var(--text);}
+
+  /* ---- modal / sheet ---- */
+  .scrim{
+    position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;
+    display:none;align-items:flex-end;justify-content:center;
+  }
+  .scrim.open{display:flex;}
+  .sheet{
+    background:var(--surface);width:100%;max-width:560px;
+    border-radius:20px 20px 0 0;border:1px solid var(--border);border-bottom:none;
+    padding:22px 20px calc(26px + env(safe-area-inset-bottom));
+    animation:slideup .2s ease;
+  }
+  @keyframes slideup{from{transform:translateY(40px);opacity:.6;}to{transform:translateY(0);opacity:1;}}
+  .sheet h2{font-family:var(--serif);font-weight:500;font-size:20px;margin:0 0 18px;}
+  label{display:block;font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px;}
+  input[type=text]{
+    width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;
+    color:var(--text);font-family:var(--serif);font-size:18px;padding:12px 14px;margin-bottom:18px;
+    -webkit-user-select:text;user-select:text;
+  }
+  input[type=text]:focus{outline:none;border-color:var(--accent);}
+  .prio-row{display:flex;align-items:center;gap:14px;margin-bottom:24px;}
+  input[type=range]{flex:1;accent-color:var(--accent);height:30px;}
+  .prio-val{font-family:var(--mono);font-size:22px;color:var(--accent);width:28px;text-align:center;}
+  .btn{
+    width:100%;border:none;border-radius:12px;padding:15px;font-family:var(--sans);
+    font-size:16px;cursor:pointer;font-weight:500;
+  }
+  .btn-primary{background:var(--accent);color:#15120E;}
+  .btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);margin-top:10px;}
+  .btn-danger{background:none;color:var(--missed);border:1px solid var(--missed);margin-top:10px;}
+  .btn:active{transform:scale(.98);}
+
+  /* ---- detail view ---- */
+  .detail{
+    position:fixed;inset:0;background:var(--bg);z-index:50;
+    overflow-y:auto;display:none;
+    padding:calc(18px + env(safe-area-inset-top)) 16px calc(30px + env(safe-area-inset-bottom));
+  }
+  .detail.open{display:block;}
+  .detail-head{display:flex;align-items:center;gap:14px;margin-bottom:6px;max-width:560px;margin-inline:auto;}
+  .back{background:none;border:none;color:var(--accent);font-size:16px;cursor:pointer;padding:6px 0;font-family:var(--sans);}
+  .detail-body{max-width:560px;margin:0 auto;}
+  .detail-body h2{font-family:var(--serif);font-weight:500;font-size:24px;margin:10px 0 2px;}
+  .detail-body .sub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:22px;}
+  .month-row{margin-bottom:14px;}
+  .month-row .ml{font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:5px;}
+
+  /* settings */
+  .set-row{display:flex;flex-direction:column;gap:10px;}
+
+  /* confirm dialog */
+  .cfm{z-index:70;align-items:center;padding:24px;}
+  .cfm-sheet{border-radius:18px;border-bottom:1px solid var(--border);max-width:360px;animation:none;}
+  .cfm-msg{font-family:var(--serif);font-size:17px;line-height:1.45;margin:2px 0 20px;}
+
+  /* toast */
+  .toast{
+    position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(8px);
+    background:var(--surface2);border:1px solid var(--border);color:var(--text);
+    padding:12px 18px;border-radius:11px;font-size:14px;z-index:80;
+    opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
+    max-width:88%;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="hTitle">Dnes</h1>
+  <span class="date" id="hDate"></span>
+</header>
+
+<div class="wrap">
+  <!-- TODAY -->
+  <section class="page active" id="pageToday">
+    <div id="todayList"></div>
+    <div class="empty-state" id="todayEmpty" style="display:none">
+      Zatím žádné návyky.<br>Ťukni na <b style="color:var(--accent)">+</b> a přidej první.
+    </div>
+  </section>
+
+  <!-- OVERVIEW -->
+  <section class="page" id="pageOverview">
+    <div class="legend">
+      <span><i style="background:var(--done)"></i>splněno</span>
+      <span><i style="background:var(--missed)"></i>nesplněno</span>
+      <span><i style="background:var(--empty)"></i>nic</span>
+    </div>
+    <div id="overviewList"></div>
+    <div class="empty-state" id="overviewEmpty" style="display:none">Žádné návyky k zobrazení.</div>
+  </section>
+</div>
+
+<button class="fab" id="fab" aria-label="Přidat návyk">+</button>
+
+<nav class="tabs">
+  <button class="tab active" data-page="Today"><span class="ic">✓</span>Dnes</button>
+  <button class="tab" data-page="Overview"><span class="ic">▦</span>Přehled</button>
+  <button class="tab" data-page="Settings"><span class="ic">⚙</span>Data</button>
+</nav>
+
+<!-- ADD / EDIT SHEET -->
+<div class="scrim" id="sheetScrim">
+  <div class="sheet" id="sheet">
+    <h2 id="sheetTitle">Nový návyk</h2>
+    <label>Název</label>
+    <input type="text" id="inName" placeholder="třeba Meditace" autocomplete="off">
+    <label>Priorita</label>
+    <div class="prio-row">
+      <input type="range" id="inPrio" min="1" max="10" value="5">
+      <span class="prio-val" id="prioVal">5</span>
+    </div>
+    <button class="btn btn-primary" id="saveHabit">Uložit</button>
+    <button class="btn btn-danger" id="deleteHabit" style="display:none">Smazat návyk</button>
+    <button class="btn btn-ghost" id="cancelSheet">Zrušit</button>
+  </div>
+</div>
+
+<!-- SETTINGS SHEET -->
+<div class="scrim" id="setScrim">
+  <div class="sheet">
+    <h2>Data</h2>
+    <div class="set-row">
+      <button class="btn btn-primary" id="btnExport">Exportovat zálohu (JSON)</button>
+      <button class="btn btn-ghost" id="btnImport">Načíst zálohu ze souboru</button>
+      <button class="btn btn-ghost" id="setClose">Zavřít</button>
+    </div>
+    <input type="file" id="fileImport" accept="application/json,.json" style="display:none">
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="scrim cfm" id="cfmScrim">
+  <div class="sheet cfm-sheet">
+    <p class="cfm-msg" id="cfmMsg"></p>
+    <button class="btn btn-danger" id="cfmYes" style="margin-top:0">Potvrdit</button>
+    <button class="btn btn-ghost" id="cfmNo">Zrušit</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- DETAIL -->
+<div class="detail" id="detail">
+  <div class="detail-head"><button class="back" id="detailBack">‹ Zpět</button><button class="back" id="detailEdit" style="margin-left:auto">Upravit</button></div>
+  <div class="detail-body" id="detailBody"></div>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- state ---------- */
+var KEY = "habity.v1";
+var state = load();
+
+function load(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return { habits:[], log:{} };
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){
+    toast("Nepodařilo se uložit. Udělej si radši zálohu přes Data.");
+  }
+}
+
+/* ---------- date helpers (lokální čas) ---------- */
+function key(d){
+  var y=d.getFullYear(), m=("0"+(d.getMonth()+1)).slice(-2), day=("0"+d.getDate()).slice(-2);
+  return y+"-"+m+"-"+day;
+}
+function today(){ var d=new Date(); d.setHours(0,0,0,0); return d; }
+function addDays(d,n){ var x=new Date(d); x.setDate(x.getDate()+n); return x; }
+var MONTHS=["led","úno","bře","dub","kvě","čvn","čvc","srp","zář","říj","lis","pro"];
+function fmtShort(d){ return d.getDate()+". "+MONTHS[d.getMonth()]; }
+function fmtLong(d){
+  var days=["neděle","pondělí","úterý","středa","čtvrtek","pátek","sobota"];
+  return days[d.getDay()]+" "+d.getDate()+". "+MONTHS[d.getMonth()]+" "+d.getFullYear();
+}
+
+/* ---------- log access ---------- */
+function getState(habitId, dateKey){
+  var h = state.log[habitId];
+  return (h && h[dateKey]) || null; // "done" | "missed" | null
+}
+function setState(habitId, dateKey, val){
+  if(!state.log[habitId]) state.log[habitId] = {};
+  if(val===null) delete state.log[habitId][dateKey];
+  else state.log[habitId][dateKey] = val;
+  save();
+}
+function cycle(habitId, dateKey){
+  var cur = getState(habitId, dateKey);
+  var next = cur===null ? "done" : cur==="done" ? "missed" : null;
+  setState(habitId, dateKey, next);
+  return next;
+}
+
+/* ---------- habits ---------- */
+function sortedHabits(){
+  return state.habits.slice().sort(function(a,b){
+    if(b.priority!==a.priority) return b.priority-a.priority;
+    return a.createdAt-b.createdAt;
+  });
+}
+function habitById(id){
+  for(var i=0;i<state.habits.length;i++) if(state.habits[i].id===id) return state.habits[i];
+  return null;
+}
+
+/* ---------- render: TODAY ---------- */
+function renderToday(){
+  var list = document.getElementById("todayList");
+  var empty = document.getElementById("todayEmpty");
+  var hs = sortedHabits();
+  list.innerHTML = "";
+  empty.style.display = hs.length ? "none" : "block";
+  var tk = key(today());
+  hs.forEach(function(h){
+    var st = getState(h.id, tk);
+    var card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML =
+      '<div class="name"></div>'+
+      '<span class="prio">P'+h.priority+'</span>'+
+      '<div class="toggles">'+
+        '<div class="tg yes'+(st==="done"?" on":"")+'">✓</div>'+
+        '<div class="tg no'+(st==="missed"?" on":"")+'">✕</div>'+
+      '</div>';
+    card.querySelector(".name").textContent = h.name;
+    card.querySelector(".name").onclick = function(){
+      deleteHabitById(h.id);
+    };
+    var yes = card.querySelector(".tg.yes");
+    var no = card.querySelector(".tg.no");
+    yes.onclick = function(){
+      setState(h.id, tk, getState(h.id,tk)==="done"?null:"done");
+      renderToday();
+    };
+    no.onclick = function(){
+      setState(h.id, tk, getState(h.id,tk)==="missed"?null:"missed");
+      renderToday();
+    };
+    list.appendChild(card);
+  });
+}
+
+/* ---------- render: OVERVIEW (3x30 = 90 dní) ---------- */
+function renderOverview(){
+  var list = document.getElementById("overviewList");
+  var empty = document.getElementById("overviewEmpty");
+  var hs = sortedHabits();
+  list.innerHTML = "";
+  empty.style.display = hs.length ? "none" : "block";
+  var t = today();
+  var tk = key(t);
+
+  hs.forEach(function(h){
+    var block = document.createElement("div");
+    block.className = "hblock";
+
+    var head = document.createElement("div");
+    head.className = "hhead";
+
+    // 90 dní: nejstarší vlevo nahoře (index 0 = před 89 dny), dnešek vpravo dole
+    var grid = document.createElement("div");
+    grid.className = "grid";
+    var doneCount = 0;
+    for(var i=89;i>=0;i--){
+      var d = addDays(t, -i);
+      var dk = key(d);
+      var st = getState(h.id, dk);
+      if(st==="done") doneCount++;
+      var cell = document.createElement("div");
+      cell.className = "cell"+(st?(" "+st):"")+(dk===tk?" today":"");
+      (function(hid, dkey, cellEl){
+        cellEl.onclick = function(ev){
+          ev.stopPropagation();
+          var nx = cycle(hid, dkey);
+          cellEl.className = "cell"+(nx?(" "+nx):"")+(dkey===tk?" today":"");
+          renderHeadStat(head, hid);
+        };
+      })(h.id, dk, cell);
+      grid.appendChild(cell);
+    }
+
+    head.innerHTML =
+      '<span class="name"></span>'+
+      '<span class="prio">P'+h.priority+'</span>'+
+      '<span class="stat"></span>'+
+      '<span class="chev">›</span>';
+    head.querySelector(".name").textContent = h.name;
+    head.dataset.done = doneCount;
+    head.querySelector(".stat").textContent = doneCount+"/90";
+    head.onclick = function(){ openDetail(h.id); };
+
+    block.appendChild(head);
+    block.appendChild(grid);
+    list.appendChild(block);
+  });
+}
+function renderHeadStat(head, habitId){
+  // přepočítej splněno za 90 dní po editaci v gridu
+  var t = today(), c=0;
+  for(var i=89;i>=0;i--){ if(getState(habitId, key(addDays(t,-i)))==="done") c++; }
+  head.querySelector(".stat").textContent = c+"/90";
+}
+
+/* ---------- DETAIL: celá historie ---------- */
+var detailHabitId = null;
+function openDetail(id){
+  detailHabitId = id;
+  var h = habitById(id);
+  if(!h) return;
+  var body = document.getElementById("detailBody");
+
+  // od nejstaršího: min(createdAt, nejstarší log) až dnes
+  var startD = today();
+  var cd = new Date(h.createdAt); cd.setHours(0,0,0,0);
+  if(cd < startD) startD = cd;
+  var logKeys = state.log[id] ? Object.keys(state.log[id]) : [];
+  logKeys.forEach(function(k){
+    var p = k.split("-"); var d = new Date(+p[0], +p[1]-1, +p[2]);
+    if(d < startD) startD = d;
+  });
+
+  var t = today();
+  var tk = key(t);
+  var totalDays = Math.round((t - startD)/86400000) + 1;
+  // zaokrouhli nahoru na násobek 30, ať řádky sedí; nejstarší vlevo nahoře
+  var rows = Math.ceil(totalDays/30);
+  var startOffset = rows*30 - 1; // kolik dní zpět začíná levý horní roh
+
+  var html = '<h2></h2><div class="sub"></div>';
+  for(var r=0;r<rows;r++){
+    var rowStartOffset = startOffset - r*30;
+    var rowStart = addDays(t, -rowStartOffset);
+    html += '<div class="month-row"><div class="ml">'+fmtShort(rowStart)+'</div>'+
+            '<div class="grid" data-row="'+r+'"></div></div>';
+  }
+  body.innerHTML = html;
+  body.querySelector("h2").textContent = h.name;
+  body.querySelector(".sub").textContent = "priorita "+h.priority+" · od "+fmtShort(startD)+" "+startD.getFullYear();
+
+  body.querySelectorAll(".grid").forEach(function(g){
+    var r = +g.dataset.row;
+    for(var c=0;c<30;c++){
+      var off = (startOffset - r*30) - c;
+      var d = addDays(t, -off);
+      var dk = key(d);
+      var inFuture = off < 0;
+      var cell = document.createElement("div");
+      var st = getState(id, dk);
+      cell.className = "cell"+(st?(" "+st):"")+(dk===tk?" today":"");
+      if(inFuture){ cell.style.visibility="hidden"; }
+      else {
+        (function(dkey, cellEl){
+          cellEl.onclick = function(){
+            var nx = cycle(id, dkey);
+            cellEl.className = "cell"+(nx?(" "+nx):"")+(dkey===tk?" today":"");
+          };
+        })(dk, cell);
+      }
+      g.appendChild(cell);
+    }
+  });
+
+  document.getElementById("detail").classList.add("open");
+}
+document.getElementById("detailBack").onclick = function(){
+  document.getElementById("detail").classList.remove("open");
+  renderOverview();
+};
+
+/* ---------- ADD / EDIT sheet ---------- */
+var editingId = null;
+var prioInput = document.getElementById("inPrio");
+var prioVal = document.getElementById("prioVal");
+prioInput.oninput = function(){ prioVal.textContent = prioInput.value; };
+
+function openSheet(id){
+  editingId = id || null;
+  var del = document.getElementById("deleteHabit");
+  if(editingId){
+    var h = habitById(editingId);
+    document.getElementById("sheetTitle").textContent = "Upravit návyk";
+    document.getElementById("inName").value = h.name;
+    prioInput.value = h.priority; prioVal.textContent = h.priority;
+    del.style.display = "block";
+  } else {
+    document.getElementById("sheetTitle").textContent = "Nový návyk";
+    document.getElementById("inName").value = "";
+    prioInput.value = 5; prioVal.textContent = 5;
+    del.style.display = "none";
+  }
+  document.getElementById("sheetScrim").classList.add("open");
+  setTimeout(function(){ document.getElementById("inName").focus(); }, 100);
+}
+function closeSheet(){ document.getElementById("sheetScrim").classList.remove("open"); }
+
+document.getElementById("fab").onclick = function(){ openSheet(null); };
+document.getElementById("cancelSheet").onclick = closeSheet;
+document.getElementById("sheetScrim").onclick = function(e){ if(e.target===this) closeSheet(); };
+
+document.getElementById("saveHabit").onclick = function(){
+  var name = document.getElementById("inName").value.trim();
+  if(!name){ document.getElementById("inName").focus(); return; }
+  var prio = +prioInput.value;
+  if(editingId){
+    var h = habitById(editingId);
+    h.name = name; h.priority = prio;
+  } else {
+    state.habits.push({ id:"h"+Date.now()+Math.random().toString(36).slice(2,6), name:name, priority:prio, createdAt:Date.now() });
+  }
+  save(); closeSheet(); renderAll();
+  if(document.getElementById("detail").classList.contains("open") && detailHabitId) openDetail(detailHabitId);
+};
+/* ---------- vlastní confirm + toast (nativní okna bývají blokovaná) ---------- */
+var cfmCb = null;
+function askConfirm(msg, yesLabel, cb){
+  document.getElementById("cfmMsg").textContent = msg;
+  document.getElementById("cfmYes").textContent = yesLabel || "Potvrdit";
+  cfmCb = cb;
+  document.getElementById("cfmScrim").classList.add("open");
+}
+function closeConfirm(){ document.getElementById("cfmScrim").classList.remove("open"); cfmCb = null; }
+document.getElementById("cfmYes").onclick = function(){
+  var cb = cfmCb; closeConfirm(); if(cb) cb();
+};
+document.getElementById("cfmNo").onclick = closeConfirm;
+document.getElementById("cfmScrim").onclick = function(e){ if(e.target===this) closeConfirm(); };
+function toast(msg){
+  var t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+}
+
+function deleteHabitById(id){
+  var h = habitById(id);
+  if(!h) return;
+  askConfirm('Smazat „'+h.name+'" a celou jeho historii?', "Smazat", function(){
+    state.habits = state.habits.filter(function(x){ return x.id!==id; });
+    delete state.log[id];
+    save(); closeSheet();
+    document.getElementById("detail").classList.remove("open");
+    renderAll();
+  });
+}
+document.getElementById("deleteHabit").onclick = function(){
+  if(editingId) deleteHabitById(editingId);
+};
+
+/* edit z detailu */
+function editFromDetail(){ if(detailHabitId) openSheet(detailHabitId); }
+document.getElementById("detailEdit").onclick = editFromDetail;
+
+/* ---------- SETTINGS / export-import ---------- */
+function openSettings(){ document.getElementById("setScrim").classList.add("open"); }
+function closeSettings(){ document.getElementById("setScrim").classList.remove("open"); }
+document.getElementById("setClose").onclick = closeSettings;
+document.getElementById("setScrim").onclick = function(e){ if(e.target===this) closeSettings(); };
+
+document.getElementById("btnExport").onclick = function(){
+  var data = JSON.stringify(state, null, 2);
+  var blob = new Blob([data], {type:"application/json"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  var dk = key(today());
+  a.href = url; a.download = "habity-zaloha-"+dk+".json";
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+};
+document.getElementById("btnImport").onclick = function(){ document.getElementById("fileImport").click(); };
+document.getElementById("fileImport").onchange = function(e){
+  var file = e.target.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    try{
+      var obj = JSON.parse(reader.result);
+      if(!obj || !Array.isArray(obj.habits) || typeof obj.log!=="object"){
+        throw new Error("bad");
+      }
+      askConfirm("Načíst zálohu? Přepíše to současná data v této appce.", "Načíst", function(){
+        state = obj; save(); closeSettings(); renderAll();
+        toast("Záloha načtena.");
+      });
+    }catch(err){
+      toast("Tohle nevypadá jako platná záloha Habitů.");
+    }
+    document.getElementById("fileImport").value = "";
+  };
+  reader.readAsText(file);
+};
+
+/* ---------- tabs ---------- */
+var titles = { Today:"Dnes", Overview:"Přehled" };
+document.querySelectorAll(".tab").forEach(function(tab){
+  tab.onclick = function(){
+    var p = tab.dataset.page;
+    if(p==="Settings"){ openSettings(); return; }
+    document.querySelectorAll(".tab").forEach(function(t){ t.classList.toggle("active", t===tab); });
+    document.getElementById("pageToday").classList.toggle("active", p==="Today");
+    document.getElementById("pageOverview").classList.toggle("active", p==="Overview");
+    document.getElementById("hTitle").textContent = titles[p];
+    document.getElementById("fab").style.display = "block";
+    if(p==="Today") renderToday(); else renderOverview();
+  };
+});
+
+/* ---------- init ---------- */
+function renderAll(){ renderToday(); renderOverview(); }
+document.getElementById("hDate").textContent = fmtLong(today());
+renderAll();
+</script>
+</body>
+</html>
