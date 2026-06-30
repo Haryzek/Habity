@@ -61,8 +61,8 @@
   /* ---- pages + swipe track (3 pozice: Tasks / 01 / 02) ---- */
   .page{display:none;overflow:hidden;touch-action:pan-y;}
   .page.active{display:block;}
-  .track{display:flex;width:300%;transition:transform .25s ease;will-change:transform;}
-  .panel{width:33.3333%;flex:0 0 33.3333%;}
+  .track{display:flex;width:400%;transition:transform .25s ease;will-change:transform;}
+  .panel{width:25%;flex:0 0 25%;}
 
   /* ---- today cards ---- */
   .card{
@@ -270,6 +270,94 @@
     max-width:88%;text-align:center;
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ===================== CHECK – úkolová sekce (pos 1) ===================== */
+  /* prioritní proužek: chladná -> sytě červená dle priority 1..10 */
+  .pstripe{width:3px;align-self:stretch;border-radius:3px;flex-shrink:0;min-height:18px;}
+
+  /* společná řádka úkolu (WiP náhled, kalendář, backlog) */
+  .titem{
+    background:var(--surface);border:1px solid var(--border);border-radius:7px;
+    padding:5px 8px;margin-bottom:4px;display:flex;align-items:center;gap:8px;
+  }
+  .titem .tname{font-family:var(--serif);font-size:14px;line-height:1.25;flex:1;min-width:0;word-break:break-word;cursor:pointer;}
+  .titem.done .tname{color:var(--dim);text-decoration:line-through;}
+  .titem .trepeat{font-family:var(--mono);font-size:9px;color:var(--dim);flex-shrink:0;letter-spacing:.3px;}
+  .titem .tacts{display:flex;gap:5px;flex-shrink:0;}
+  .tbtn{
+    width:26px;height:26px;border-radius:6px;border:1px solid var(--border);
+    background:var(--surface2);color:var(--dim);font-size:13px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s ease;
+  }
+  .tbtn:active{transform:scale(.9);}
+  .tbtn.ok:active{background:var(--done);border-color:var(--done);color:#16130E;}
+  .tbtn.no:active{background:var(--missed);border-color:var(--missed);color:#16130E;}
+  .tbtn.mv{font-size:12px;}
+
+  /* --- Check default obrazovka: WiP náhled + kalendář, jedna scroll-plocha --- */
+  .wipbar{
+    display:flex;align-items:baseline;justify-content:space-between;
+    margin:2px 0 7px;cursor:pointer;
+  }
+  .wipbar .wtitle{font-family:var(--serif);font-size:15px;color:var(--text);}
+  .wipbar .wmore{font-family:var(--mono);font-size:10px;color:var(--accent);}
+  .wip-wrap{margin-bottom:6px;}
+  .wip-empty{font-family:var(--serif);font-size:13px;color:var(--dim);padding:4px 2px 10px;}
+
+  .cal-sep{
+    display:flex;align-items:center;gap:10px;margin:16px 0 9px;
+  }
+  .cal-sep:first-child{margin-top:6px;}
+  .cal-sep .cl{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.5px;flex-shrink:0;}
+  .cal-sep .cline{flex:1;height:1px;background:var(--border);}
+  .cal-sep.is-today .cl{color:var(--accent);}
+  .cal-day{margin-bottom:4px;}
+  .cal-empty{
+    text-align:center;color:var(--dim);font-family:var(--serif);
+    font-size:14px;padding:24px 20px;line-height:1.6;
+  }
+
+  /* --- backlog view (plná obrazovka uvnitř panelu) --- */
+  .blogview{display:none;}
+  .blogview.open{display:block;}
+  .blog-head{display:flex;align-items:center;gap:10px;margin:2px 0 14px;}
+  .blog-back{background:none;border:none;color:var(--accent);font-size:15px;cursor:pointer;padding:6px 0;font-family:var(--sans);flex-shrink:0;}
+  .blog-sel{
+    flex:1;background:var(--bg);border:1px solid var(--border);border-radius:9px;
+    color:var(--text);font-family:var(--serif);font-size:16px;padding:9px 12px;
+    -webkit-appearance:none;appearance:none;cursor:pointer;
+  }
+  .blog-sel:focus{outline:none;border-color:var(--accent);}
+  .checkDefault{display:block;}
+  .checkDefault.hide{display:none;}
+
+  /* --- zadávací sheet: deadline + repeat segmenty --- */
+  .seg-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;}
+  .seg{
+    border:1px solid var(--border);background:var(--surface2);color:var(--dim);
+    border-radius:8px;padding:8px 11px;font-family:var(--sans);font-size:13px;cursor:pointer;
+    transition:all .12s ease;
+  }
+  .seg.on{background:var(--accent);border-color:var(--accent);color:#15120E;}
+  .seg:active{transform:scale(.96);}
+  .date-in{
+    width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;
+    color:var(--text);font-family:var(--mono);font-size:15px;padding:11px 13px;margin-bottom:18px;
+    -webkit-user-select:text;user-select:text;
+  }
+  .date-in:focus{outline:none;border-color:var(--accent);}
+  .bouncer-box{margin-bottom:18px;}
+  .bouncer-box.dim{opacity:.4;pointer-events:none;}
+  .blog-pick{
+    width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;
+    color:var(--text);font-family:var(--serif);font-size:16px;padding:11px 13px;margin-bottom:10px;
+    -webkit-appearance:none;appearance:none;cursor:pointer;
+  }
+  .blog-pick:focus{outline:none;border-color:var(--accent);}
+  .blog-new{
+    width:100%;border:1px dashed var(--border);background:none;color:var(--accent);
+    border-radius:10px;padding:11px;font-family:var(--sans);font-size:13px;cursor:pointer;margin-bottom:18px;
+  }
 </style>
 </head>
 <body>
@@ -281,29 +369,54 @@
 
 <div class="pager" id="pager">
   <div class="dot" data-sec="0"></div>
-  <div class="dot on" data-sec="1"></div>
-  <div class="dot" data-sec="2"></div>
+  <div class="dot" data-sec="1"></div>
+  <div class="dot on" data-sec="2"></div>
+  <div class="dot" data-sec="3"></div>
 </div>
 
 <div class="wrap">
-  <!-- TODAY (pozice: Tasks / Dnes 01 / Dnes 02) -->
+  <!-- TODAY/CHECK (pozice: Tasky / Úkoly / Návyky / Volno) -->
   <section class="page active" id="pageToday">
     <div class="track" id="trackToday">
-      <!-- pos 0: TASKS -->
+      <!-- pos 0: TASKS (projektové, beze změny) -->
       <div class="panel">
         <div id="tasksList"></div>
         <div class="empty-state" id="tasksEmpty" style="display:none">
           Zatím žádný úkol.<br>Ťukni na <b style="color:var(--accent)">+</b> a přidej první.
         </div>
       </div>
-      <!-- pos 1: Dnes 01 -->
+      <!-- pos 1: ÚKOLY (nová sekce – Check) -->
+      <div class="panel">
+        <!-- default obrazovka: WiP náhled + kalendář -->
+        <div class="checkDefault" id="checkDefault">
+          <div class="wipbar" id="wipBar">
+            <span class="wtitle" id="wipTitle">Wip</span>
+            <span class="wmore" id="wipMore"></span>
+          </div>
+          <div class="wip-wrap" id="wipPreview"></div>
+          <div id="calList"></div>
+          <div class="cal-empty" id="calEmpty" style="display:none">
+            Kalendář je prázdný.<br>Ťukni na <b style="color:var(--accent)">+</b> a naplánuj úkol.
+          </div>
+        </div>
+        <!-- backlog view (přepne se přes WiP lištu) -->
+        <div class="blogview" id="blogView">
+          <div class="blog-head">
+            <button class="blog-back" id="blogBack">‹ Zpět</button>
+            <select class="blog-sel" id="blogSelect"></select>
+          </div>
+          <div id="blogList"></div>
+          <div class="cal-empty" id="blogEmpty" style="display:none">Tenhle backlog je prázdný.</div>
+        </div>
+      </div>
+      <!-- pos 2: Návyky 01 -->
       <div class="panel">
         <div id="todayList0"></div>
         <div class="empty-state" id="todayEmpty0" style="display:none">
           Zatím žádné povinnosti.<br>Ťukni na <b style="color:var(--accent)">+</b> a přidej první.
         </div>
       </div>
-      <!-- pos 2: Dnes 02 -->
+      <!-- pos 3: Návyky 02 -->
       <div class="panel">
         <div id="todayList1"></div>
         <div class="empty-state" id="todayEmpty1" style="display:none">
@@ -325,7 +438,13 @@
         <div id="progresList"></div>
         <div class="empty-state" id="progresEmpty" style="display:none">Žádné úkoly k zobrazení.</div>
       </div>
-      <!-- pos 1: Přehled 01 -->
+      <!-- pos 1: Přehled ÚKOLŮ (placeholder – doplní vlna 1b) -->
+      <div class="panel">
+        <div class="cal-empty" id="taskOverviewPlaceholder">
+          Přehled úkolů<br>dorazí v další vlně. 🥥
+        </div>
+      </div>
+      <!-- pos 2: Přehled návyky 01 -->
       <div class="panel">
         <div class="legend">
           <span><i style="background:var(--done)"></i>splněno</span>
@@ -335,7 +454,7 @@
         <div id="overviewList0"></div>
         <div class="empty-state" id="overviewEmpty0" style="display:none">Žádné návyky k zobrazení.</div>
       </div>
-      <!-- pos 2: Přehled 02 -->
+      <!-- pos 3: Přehled návyky 02 -->
       <div class="panel">
         <div class="legend">
           <span><i style="background:var(--done)"></i>splněno</span>
@@ -352,7 +471,7 @@
 <button class="fab" id="fab" aria-label="Přidat">+</button>
 
 <nav class="tabs">
-  <button class="tab active" data-page="Today"><span class="ic">✓</span>Dnes</button>
+  <button class="tab active" data-page="Today"><span class="ic">✓</span>Check</button>
   <button class="tab" data-page="Overview"><span class="ic">▦</span>Přehled</button>
   <button class="tab" data-page="Settings"><span class="ic">⚙</span>Data</button>
 </nav>
@@ -397,7 +516,66 @@
   </div>
 </div>
 
-<!-- SETTINGS SHEET -->
+<!-- ADD / EDIT ÚKOL SHEET (nová sekce) -->
+<div class="scrim" id="utScrim">
+  <div class="sheet tall" id="utSheet">
+    <h2 id="utTitle">Nový úkol</h2>
+    <label>Název</label>
+    <input type="text" id="utName" placeholder="třeba Napsat blog" autocomplete="off">
+
+    <label>Priorita</label>
+    <div class="prio-row">
+      <input type="range" id="utPrio" min="1" max="10" value="1">
+      <span class="prio-val" id="utPrioVal">1</span>
+    </div>
+
+    <label>Termín</label>
+    <div class="seg-row" id="utDeadlineSeg">
+      <div class="seg" data-dl="none">Backlog</div>
+      <div class="seg" data-dl="today">Dnes</div>
+      <div class="seg" data-dl="tomorrow">Zítra</div>
+      <div class="seg" data-dl="date">Datum…</div>
+    </div>
+    <input type="date" id="utDate" class="date-in" style="display:none">
+
+    <label>Opakování</label>
+    <div class="seg-row" id="utRepeatSeg">
+      <div class="seg" data-rep="none">Žádné</div>
+      <div class="seg" data-rep="daily">Denně</div>
+      <div class="seg" data-rep="weekly">Týdně</div>
+      <div class="seg" data-rep="biweekly">Ob týden</div>
+      <div class="seg" data-rep="monthly">Měsíčně</div>
+      <div class="seg" data-rep="quarterly">Kvartálně</div>
+      <div class="seg" data-rep="halfyear">Půlrok</div>
+      <div class="seg" data-rep="yearly">Ročně</div>
+    </div>
+
+    <div class="bouncer-box dim" id="utBouncerBox">
+      <label id="utBouncerLabel">Kotva opakování</label>
+      <!-- weekly/biweekly: den v týdnu -->
+      <div class="seg-row" id="utBouncerDow" style="display:none">
+        <div class="seg" data-dow="1">Po</div>
+        <div class="seg" data-dow="2">Út</div>
+        <div class="seg" data-dow="3">St</div>
+        <div class="seg" data-dow="4">Čt</div>
+        <div class="seg" data-dow="5">Pá</div>
+        <div class="seg" data-dow="6">So</div>
+        <div class="seg" data-dow="0">Ne</div>
+      </div>
+      <!-- monthly+: přesné datum -->
+      <input type="date" id="utBouncerDate" class="date-in" style="display:none;margin-bottom:0">
+      <span class="hint" style="font-family:var(--mono);font-size:10px;color:var(--dim);display:block;margin-top:6px;">prázdné = počítá se ode dne splnění</span>
+    </div>
+
+    <label>Backlog</label>
+    <select class="blog-pick" id="utBacklog"></select>
+    <button class="blog-new" id="utNewBacklog" type="button">+ nový backlog</button>
+
+    <button class="btn btn-primary" id="utSave">Uložit</button>
+    <button class="btn btn-danger" id="utDelete" style="display:none">Smazat úkol</button>
+    <button class="btn btn-ghost" id="utCancel">Zrušit</button>
+  </div>
+</div>
 <div class="scrim" id="setScrim">
   <div class="sheet">
     <h2>Data</h2>
@@ -434,17 +612,29 @@
    v2 struktura:
    {
      sections: [ {habits,log}, {habits,log} ],   // 0=povinnosti(01), 1=volnočas(02)
-     tasks: [ {id,name,priority,createdAt, subtasks:[{id,name,weight,done}]} ]
+     tasks: [ {id,name,priority,createdAt, subtasks:[{id,name,weight,done}]} ],
+     // NOVÁ úkolová sekce (Check):
+     backlogs: ["Wip","Done"],            // názvy; Wip+Done vždy první dva, pořadí = řazení
+     utasks: [ {id,name,priority,createdAt,
+                date:"YYYY-MM-DD"|null,    // null = nedatovaný (bydlí v backlogu)
+                backlog:"Wip",             // domovský backlog
+                repeat:"none"|"daily"|"weekly"|"biweekly"|"monthly"|"quarterly"|"halfyear"|"yearly",
+                bouncer:null|{dow:0-6}|{date:"YYYY-MM-DD"},
+                done:false} ],
+     daily: { "YYYY-MM-DD": {done:n, missed:n} },  // agregát pro Přehled
+     lastRollup: "YYYY-MM-DD"|null
    }
-   Swipe pozice: 0 = Tasks/Progres, 1 = sekce 01, 2 = sekce 02            */
+   Swipe pozice: 0=Tasky/Progres, 1=Úkoly(Check), 2=Návyky, 3=Volno            */
 var KEY = "habity.v2";
 var OLDKEY = "habity.v1";
 var GRID = 90;       // čtverečků na úkol (3 řádky × 30)
-var curSection = 1;  // 0..2 – aktivní pozice, sdílená pro Dnes i Přehled (start na Návyky)
+var curSection = 2;  // 0..3 – aktivní pozice, sdílená pro Check i Přehled (start na Návyky)
+var MAXSEC = 3;      // poslední pozice
+var WIP_PREVIEW_MIN = 10;
 
 var state = load();
 
-function blankState(){ return { sections:[ {habits:[],log:{}}, {habits:[],log:{}} ], tasks:[] }; }
+function blankState(){ return { sections:[ {habits:[],log:{}}, {habits:[],log:{}} ], tasks:[], backlogs:["Wip","Done"], utasks:[], daily:{}, lastRollup:null }; }
 
 function normalize(o){
   if(!o || typeof o!=="object") return blankState();
@@ -480,6 +670,61 @@ function normalize(o){
         };
       });
   }
+
+  // ---- NOVÁ úkolová sekce ----
+  // backlogy: Wip a Done jsou vždy garantované a první dva
+  var bl = ["Wip","Done"];
+  if(Array.isArray(o.backlogs)){
+    o.backlogs.forEach(function(name){
+      if(typeof name==="string"){
+        var nm = name.trim();
+        if(nm && bl.indexOf(nm)===-1) bl.push(nm);
+      }
+    });
+  }
+  s.backlogs = bl;
+
+  var REPEATS = ["none","daily","weekly","biweekly","monthly","quarterly","halfyear","yearly"];
+  if(Array.isArray(o.utasks)){
+    s.utasks = o.utasks.filter(function(t){ return t && typeof t==="object" && typeof t.name==="string"; })
+      .map(function(t){
+        var rep = (REPEATS.indexOf(t.repeat)>=0) ? t.repeat : "none";
+        var bnc = null;
+        if(t.bouncer && typeof t.bouncer==="object"){
+          if(typeof t.bouncer.dow==="number" && t.bouncer.dow>=0 && t.bouncer.dow<=6) bnc = {dow:t.bouncer.dow};
+          else if(typeof t.bouncer.date==="string" && /^\d{4}-\d{2}-\d{2}$/.test(t.bouncer.date)) bnc = {date:t.bouncer.date};
+        }
+        var bk = (typeof t.backlog==="string" && bl.indexOf(t.backlog)>=0) ? t.backlog : "Wip";
+        return {
+          id: t.id || ("u"+Date.now()+Math.random().toString(36).slice(2,6)),
+          name: t.name,
+          priority: (typeof t.priority==="number" && t.priority>=1 && t.priority<=10) ? t.priority : 1,
+          createdAt: t.createdAt || Date.now(),
+          date: (typeof t.date==="string" && /^\d{4}-\d{2}-\d{2}$/.test(t.date)) ? t.date : null,
+          backlog: bk,
+          repeat: rep,
+          bouncer: bnc,
+          done: !!t.done
+        };
+      });
+  }
+
+  // denní agregát
+  if(o.daily && typeof o.daily==="object"){
+    Object.keys(o.daily).forEach(function(k){
+      if(/^\d{4}-\d{2}-\d{2}$/.test(k)){
+        var d = o.daily[k];
+        if(d && typeof d==="object"){
+          s.daily[k] = {
+            done: (typeof d.done==="number" && d.done>=0) ? d.done : 0,
+            missed: (typeof d.missed==="number" && d.missed>=0) ? d.missed : 0
+          };
+        }
+      }
+    });
+  }
+  if(typeof o.lastRollup==="string" && /^\d{4}-\d{2}-\d{2}$/.test(o.lastRollup)) s.lastRollup = o.lastRollup;
+
   return s;
 }
 
@@ -1022,7 +1267,485 @@ document.getElementById("deleteTask").onclick = function(){
   });
 };
 
-/* ---------- confirm + toast ---------- */
+/* ================= ÚKOLY – nová sekce (Check) ================= */
+/* date helpery navíc */
+function parseKey(k){ var p=k.split("-"); var d=new Date(+p[0], +p[1]-1, +p[2]); d.setHours(0,0,0,0); return d; }
+var DOW_CZ = ["Ne","Po","Út","St","Čt","Pá","So"];
+function fmtCalLabel(d){
+  var t = today();
+  var diff = Math.round((d - t)/86400000);
+  var base = DOW_CZ[d.getDay()]+" "+d.getDate()+". "+MONTHS[d.getMonth()];
+  if(diff===0) return "Dnes · "+base;
+  if(diff===1) return "Zítra · "+base;
+  if(diff===-1) return "Včera · "+base;
+  if(diff<0) return base+" ("+Math.abs(diff)+" dní zpět)";
+  return base;
+}
+
+/* denní agregát */
+function bumpDaily(dateKey, field, by){
+  if(!state.daily[dateKey]) state.daily[dateKey] = {done:0, missed:0};
+  state.daily[dateKey][field] += (by||1);
+  if(state.daily[dateKey][field]<0) state.daily[dateKey][field]=0;
+}
+
+/* úkol helpery */
+function utaskById(id){
+  for(var i=0;i<state.utasks.length;i++) if(state.utasks[i].id===id) return state.utasks[i];
+  return null;
+}
+/* řazení: priorita DESC, pak starší createdAt = vyšší sekundární priorita (ASC) */
+function sortUtasks(arr){
+  return arr.slice().sort(function(a,b){
+    if(b.priority!==a.priority) return b.priority-a.priority;
+    return a.createdAt-b.createdAt;
+  });
+}
+/* nedatované úkoly daného backlogu */
+function backlogTasks(name){
+  return sortUtasks(state.utasks.filter(function(t){ return t.date===null && t.backlog===name; }));
+}
+/* datované úkoly seskupené dle data -> [{dateKey, tasks:[]}] vzestupně */
+function calendarGroups(){
+  var map = {};
+  state.utasks.forEach(function(t){ if(t.date!==null){ (map[t.date]=map[t.date]||[]).push(t); } });
+  return Object.keys(map).sort().map(function(k){
+    return { dateKey:k, tasks: sortUtasks(map[k]) };
+  });
+}
+/* prioritní barva: 1 (chladná) -> 10 (sytě červená) */
+function prioColor(p){
+  // hue 210 (modrá) -> 0 (červená)
+  var hue = 210 - (p-1)/9*210;
+  return "hsl("+Math.round(hue)+",62%,52%)";
+}
+function repeatShort(t){
+  if(t.repeat==="none") return "";
+  var map = {daily:"↻ d",weekly:"↻ t",biweekly:"↻ 2t",monthly:"↻ m",quarterly:"↻ Q",halfyear:"↻ ½r",yearly:"↻ r"};
+  return map[t.repeat]||"↻";
+}
+
+/* ---- repeat respawn ----
+   Vrací dateKey příští instance, nebo null pokud se nemá respawnovat.
+   completionDate = Date, kdy uživatel mačká ✓.                          */
+function nextRepeatDate(t, completionDate){
+  if(t.repeat==="none") return null;
+  var c = new Date(completionDate); c.setHours(0,0,0,0);
+
+  // prázdný bouncer => klouzavě ode dne splnění
+  if(!t.bouncer){
+    switch(t.repeat){
+      case "daily":     return key(addDays(c,1));
+      case "weekly":    return key(addDays(c,7));
+      case "biweekly":  return key(addDays(c,14));
+      case "monthly":   return key(addMonths(c,1));
+      case "quarterly": return key(addMonths(c,3));
+      case "halfyear":  return key(addMonths(c,6));
+      case "yearly":    return key(addMonths(c,12));
+    }
+  }
+
+  // vyplněný bouncer => pevná řada, nejbližší BUDOUCÍ datum vůči dni splnění
+  if(t.repeat==="weekly" || t.repeat==="biweekly"){
+    var step = t.repeat==="weekly" ? 7 : 14;
+    // najdi nejbližší výskyt cílového dne v týdnu STRIKTNĚ po dni splnění
+    var dow = t.bouncer.dow;
+    var d = addDays(c,1);
+    while(d.getDay()!==dow) d = addDays(d,1);
+    // d je první cílový den po splnění; pro biweekly to stačí (řada je definovaná dnem v týdnu)
+    return key(d);
+  } else {
+    // monthly+ : řada definovaná konkrétním datem (bouncer.date), krok v měsících
+    var stepM = {monthly:1, quarterly:3, halfyear:6, yearly:12}[t.repeat];
+    var anchor = parseKey(t.bouncer.date);
+    // posouvej anchor o krok, dokud není striktně po dni splnění
+    var guard = 0;
+    while(anchor <= c && guard < 1000){ anchor = addMonths(anchor, stepM); guard++; }
+    return key(anchor);
+  }
+}
+function addMonths(d, n){
+  var x = new Date(d);
+  var day = x.getDate();
+  x.setDate(1);
+  x.setMonth(x.getMonth()+n);
+  // ošetři přetečení (31. -> kratší měsíc)
+  var dim = new Date(x.getFullYear(), x.getMonth()+1, 0).getDate();
+  x.setDate(Math.min(day, dim));
+  x.setHours(0,0,0,0);
+  return x;
+}
+
+/* ---- akce na úkolu ---- */
+/* ✓ splnit */
+function utComplete(t){
+  var tk = key(today());
+  // zelená do agregátu (k DNEŠKU – den splnění)
+  bumpDaily(tk, "done", 1);
+
+  if(t.repeat!=="none"){
+    // respawn: ta samá instance se přesune na další datum (žádné klonování)
+    var nd = nextRepeatDate(t, today());
+    if(nd){
+      t.date = nd;
+      // pevný bouncer u monthly+ se přepíše na nové datum
+      if(t.bouncer && t.bouncer.date) t.bouncer = {date:nd};
+      t.done = false;
+    }
+  } else {
+    // ne-repeat: do Done, bez data
+    t.backlog = "Done";
+    t.date = null;
+    t.done = true;
+  }
+  save(); renderCheck();
+}
+/* ✕ Nesplněno (poctivá červená) – den zčervená + úkol na zítřek */
+function utMiss(t){
+  // missed se počítá k dnešku (den, kdy přiznávám lajdáctví)
+  bumpDaily(key(today()), "missed", 1);
+  t.date = key(addDays(today(),1));
+  save(); renderCheck();
+}
+/* přesun bez penalizace */
+function utMove(t, mode){
+  var base = t.date ? parseKey(t.date) : today();
+  if(base < today()) base = today();
+  if(mode==="tomorrow") t.date = key(addDays(base,1));
+  else if(mode==="week") t.date = key(addDays(base,7));
+  save(); renderCheck();
+}
+
+/* ---- render: jeden řádek úkolu ---- */
+function makeUtaskRow(t, ctx){
+  // ctx: "cal" (kalendář) | "backlog"
+  var row = document.createElement("div");
+  row.className = "titem" + (t.done?" done":"");
+
+  var stripe = document.createElement("div");
+  stripe.className = "pstripe";
+  stripe.style.background = prioColor(t.priority);
+  row.appendChild(stripe);
+
+  var name = document.createElement("div");
+  name.className = "tname";
+  name.textContent = t.name;
+  name.onclick = function(){ openUtSheet(t.id); };
+  row.appendChild(name);
+
+  if(t.repeat!=="none"){
+    var rep = document.createElement("span");
+    rep.className = "trepeat";
+    rep.textContent = repeatShort(t);
+    row.appendChild(rep);
+  }
+
+  var acts = document.createElement("div");
+  acts.className = "tacts";
+
+  if(ctx==="cal"){
+    // ✓ splnit
+    var ok = mkBtn("ok","✓", function(){ utComplete(t); });
+    // přesun na zítřek
+    var mv1 = mkBtn("mv","→", function(){ utMove(t,"tomorrow"); }); mv1.title="Zítra";
+    // přesun o týden
+    var mv7 = mkBtn("mv","»", function(){ utMove(t,"week"); }); mv7.title="Příští týden";
+    // ✕ nesplněno
+    var no = mkBtn("no","✕", function(){ utMiss(t); });
+    acts.appendChild(ok); acts.appendChild(mv1); acts.appendChild(mv7); acts.appendChild(no);
+  } else {
+    // backlog: jen ✓ (do Done)
+    var okb = mkBtn("ok","✓", function(){ utComplete(t); });
+    acts.appendChild(okb);
+  }
+  row.appendChild(acts);
+  return row;
+}
+function mkBtn(cls, label, fn){
+  var b = document.createElement("div");
+  b.className = "tbtn "+cls;
+  b.textContent = label;
+  b.onclick = function(e){ e.stopPropagation(); fn(); };
+  return b;
+}
+
+/* ---- render: Check default (WiP náhled + kalendář) ---- */
+function renderCheckDefault(){
+  // WiP náhled – top nedatované z Wip
+  var wip = backlogTasks("Wip");
+  var preview = document.getElementById("wipPreview");
+  var more = document.getElementById("wipMore");
+  preview.innerHTML = "";
+  // ukaž minimálně 10; pokud je jich víc, zbytek schovej a nabídni "víc"
+  var shown = (wip.length<=WIP_PREVIEW_MIN) ? wip : wip.slice(0, WIP_PREVIEW_MIN);
+  if(shown.length===0){
+    var e = document.createElement("div");
+    e.className = "wip-empty";
+    e.textContent = "Wip backlog je prázdný.";
+    preview.appendChild(e);
+  } else {
+    shown.forEach(function(t){ preview.appendChild(makeUtaskRow(t,"backlog")); });
+  }
+  var hidden = wip.length - shown.length;
+  more.textContent = hidden>0 ? ("+ "+hidden+" dalších →") : "otevřít →";
+
+  // kalendář
+  var cal = document.getElementById("calList");
+  var calEmpty = document.getElementById("calEmpty");
+  cal.innerHTML = "";
+  var groups = calendarGroups();
+  calEmpty.style.display = groups.length ? "none" : "block";
+  var tk = key(today());
+  groups.forEach(function(g){
+    var sep = document.createElement("div");
+    sep.className = "cal-sep" + (g.dateKey===tk?" is-today":"");
+    sep.innerHTML = '<span class="cl"></span><span class="cline"></span>';
+    sep.querySelector(".cl").textContent = fmtCalLabel(parseKey(g.dateKey));
+    cal.appendChild(sep);
+    g.tasks.forEach(function(t){
+      var wrap = document.createElement("div");
+      wrap.className = "cal-day";
+      wrap.appendChild(makeUtaskRow(t,"cal"));
+      cal.appendChild(wrap);
+    });
+  });
+}
+
+/* ---- render: backlog view ---- */
+var blogCurrent = "Wip";
+function renderBlogView(){
+  var sel = document.getElementById("blogSelect");
+  // naplň dropdown
+  sel.innerHTML = "";
+  state.backlogs.forEach(function(name){
+    var o = document.createElement("option");
+    o.value = name; o.textContent = name;
+    if(name===blogCurrent) o.selected = true;
+    sel.appendChild(o);
+  });
+  var list = document.getElementById("blogList");
+  var empty = document.getElementById("blogEmpty");
+  list.innerHTML = "";
+  var items = backlogTasks(blogCurrent);
+  empty.style.display = items.length ? "none" : "block";
+  items.forEach(function(t){ list.appendChild(makeUtaskRow(t,"backlog")); });
+}
+
+/* ---- přepínání default <-> backlog view ---- */
+function openBlogView(name){
+  blogCurrent = name || "Wip";
+  document.getElementById("checkDefault").classList.add("hide");
+  document.getElementById("blogView").classList.add("open");
+  renderBlogView();
+}
+function closeBlogView(){
+  document.getElementById("blogView").classList.remove("open");
+  document.getElementById("checkDefault").classList.remove("hide");
+  renderCheckDefault();
+}
+document.getElementById("wipBar").onclick = function(){ openBlogView("Wip"); };
+document.getElementById("blogBack").onclick = closeBlogView;
+document.getElementById("blogSelect").onchange = function(){ blogCurrent = this.value; renderBlogView(); };
+
+/* ---- render router pro celou Check sekci ---- */
+function renderCheck(){
+  if(document.getElementById("blogView").classList.contains("open")) renderBlogView();
+  renderCheckDefault();
+}
+
+/* ================= zadávací / editační sheet úkolu ================= */
+var editingUtId = null;
+var utDL = "none";      // none|today|tomorrow|date
+var utRep = "none";
+var utDow = null;       // 0..6 pro weekly/biweekly bouncer
+var utPrioEl = document.getElementById("utPrio"), utPrioValEl = document.getElementById("utPrioVal");
+utPrioEl.oninput = function(){ utPrioValEl.textContent = utPrioEl.value; };
+
+/* deadline segmenty */
+document.querySelectorAll("#utDeadlineSeg .seg").forEach(function(seg){
+  seg.onclick = function(){
+    utDL = seg.dataset.dl;
+    document.querySelectorAll("#utDeadlineSeg .seg").forEach(function(s){ s.classList.toggle("on", s===seg); });
+    document.getElementById("utDate").style.display = (utDL==="date") ? "block" : "none";
+  };
+});
+/* repeat segmenty */
+document.querySelectorAll("#utRepeatSeg .seg").forEach(function(seg){
+  seg.onclick = function(){
+    utRep = seg.dataset.rep;
+    document.querySelectorAll("#utRepeatSeg .seg").forEach(function(s){ s.classList.toggle("on", s===seg); });
+    refreshBouncerUI();
+  };
+});
+/* bouncer den v týdnu */
+document.querySelectorAll("#utBouncerDow .seg").forEach(function(seg){
+  seg.onclick = function(){
+    utDow = +seg.dataset.dow;
+    document.querySelectorAll("#utBouncerDow .seg").forEach(function(s){ s.classList.toggle("on", s===seg); });
+  };
+});
+function refreshBouncerUI(){
+  var box = document.getElementById("utBouncerBox");
+  var dowRow = document.getElementById("utBouncerDow");
+  var dateIn = document.getElementById("utBouncerDate");
+  var label = document.getElementById("utBouncerLabel");
+  if(utRep==="none" || utRep==="daily"){
+    box.classList.add("dim");
+    dowRow.style.display = "none"; dateIn.style.display = "none";
+    return;
+  }
+  box.classList.remove("dim");
+  if(utRep==="weekly" || utRep==="biweekly"){
+    label.textContent = "Kotva – den v týdnu";
+    dowRow.style.display = "flex"; dateIn.style.display = "none";
+  } else {
+    label.textContent = "Kotva – přesné datum";
+    dowRow.style.display = "none"; dateIn.style.display = "block";
+  }
+}
+
+function fillBacklogPicker(selected){
+  var sel = document.getElementById("utBacklog");
+  sel.innerHTML = "";
+  state.backlogs.forEach(function(name){
+    if(name==="Done") return; // do Done se ručně nezakládá
+    var o = document.createElement("option");
+    o.value = name; o.textContent = name;
+    if(name===selected) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function openUtSheet(id){
+  editingUtId = id || null;
+  var del = document.getElementById("utDelete");
+
+  // reset
+  utDL = "none"; utRep = "none"; utDow = null;
+  document.querySelectorAll("#utDeadlineSeg .seg").forEach(function(s){ s.classList.remove("on"); });
+  document.querySelectorAll("#utRepeatSeg .seg").forEach(function(s){ s.classList.remove("on"); });
+  document.querySelectorAll("#utBouncerDow .seg").forEach(function(s){ s.classList.remove("on"); });
+  document.getElementById("utDate").value = "";
+  document.getElementById("utBouncerDate").value = "";
+
+  if(editingUtId){
+    var t = utaskById(editingUtId);
+    document.getElementById("utTitle").textContent = "Upravit úkol";
+    document.getElementById("utName").value = t.name;
+    utPrioEl.value = t.priority; utPrioValEl.textContent = t.priority;
+    // deadline
+    if(t.date===null){ utDL="none"; }
+    else {
+      var tk=key(today()), tmk=key(addDays(today(),1));
+      if(t.date===tk) utDL="today";
+      else if(t.date===tmk) utDL="tomorrow";
+      else { utDL="date"; document.getElementById("utDate").value = t.date; }
+    }
+    document.querySelectorAll("#utDeadlineSeg .seg").forEach(function(s){ s.classList.toggle("on", s.dataset.dl===utDL); });
+    document.getElementById("utDate").style.display = (utDL==="date")?"block":"none";
+    // repeat
+    utRep = t.repeat;
+    document.querySelectorAll("#utRepeatSeg .seg").forEach(function(s){ s.classList.toggle("on", s.dataset.rep===utRep); });
+    // bouncer
+    if(t.bouncer && typeof t.bouncer.dow==="number"){
+      utDow = t.bouncer.dow;
+      document.querySelectorAll("#utBouncerDow .seg").forEach(function(s){ s.classList.toggle("on", +s.dataset.dow===utDow); });
+    } else if(t.bouncer && t.bouncer.date){
+      document.getElementById("utBouncerDate").value = t.bouncer.date;
+    }
+    fillBacklogPicker(t.backlog);
+    del.style.display = "block";
+  } else {
+    document.getElementById("utTitle").textContent = "Nový úkol";
+    document.getElementById("utName").value = "";
+    utPrioEl.value = 1; utPrioValEl.textContent = 1;
+    fillBacklogPicker("Wip");
+    del.style.display = "none";
+  }
+  refreshBouncerUI();
+  document.getElementById("utScrim").classList.add("open");
+  document.getElementById("utSheet").scrollTop = 0;
+  setTimeout(function(){ document.getElementById("utName").focus(); }, 100);
+}
+function closeUtSheet(){ document.getElementById("utScrim").classList.remove("open"); }
+document.getElementById("utCancel").onclick = closeUtSheet;
+document.getElementById("utScrim").onclick = function(e){ if(e.target===this) closeUtSheet(); };
+
+/* nový backlog */
+document.getElementById("utNewBacklog").onclick = function(){
+  var name = prompt("Název nového backlogu:");
+  if(!name) return;
+  name = name.trim();
+  if(!name) return;
+  if(state.backlogs.indexOf(name)>=0){ toast("Backlog „"+name+"\" už existuje."); return; }
+  state.backlogs.push(name); save();
+  fillBacklogPicker(name);
+};
+
+document.getElementById("utSave").onclick = function(){
+  var name = document.getElementById("utName").value.trim();
+  if(!name){ document.getElementById("utName").focus(); return; }
+  var prio = +utPrioEl.value;
+
+  // urči datum z deadline volby
+  var date = null;
+  if(utDL==="today") date = key(today());
+  else if(utDL==="tomorrow") date = key(addDays(today(),1));
+  else if(utDL==="date"){
+    var dv = document.getElementById("utDate").value;
+    if(dv && /^\d{4}-\d{2}-\d{2}$/.test(dv)) date = dv;
+  }
+
+  // bouncer dle repeatu
+  var bouncer = null;
+  if(utRep==="weekly" || utRep==="biweekly"){
+    if(utDow!==null) bouncer = {dow:utDow};
+  } else if(utRep==="monthly"||utRep==="quarterly"||utRep==="halfyear"||utRep==="yearly"){
+    var bv = document.getElementById("utBouncerDate").value;
+    if(bv && /^\d{4}-\d{2}-\d{2}$/.test(bv)) bouncer = {date:bv};
+  }
+
+  // pokud má repeat ale není datum, použij bouncer jako první kotvu (pokud je)
+  if(date===null && utRep!=="none"){
+    if(bouncer && bouncer.date){ date = bouncer.date; }
+    else if(bouncer && typeof bouncer.dow==="number"){
+      var d = addDays(today(),0);
+      // nejbližší tento/další cílový den v týdnu (vč. dneška)
+      while(d.getDay()!==bouncer.dow) d = addDays(d,1);
+      date = key(d);
+    } else if(utRep==="daily"){
+      date = key(today());
+    }
+    // pokud pořád null (např. weekly bez zvoleného dne), necháme jako backlog
+  }
+
+  var backlog = document.getElementById("utBacklog").value || "Wip";
+
+  if(editingUtId){
+    var t = utaskById(editingUtId);
+    t.name=name; t.priority=prio; t.date=date; t.repeat=utRep; t.bouncer=bouncer;
+    // datum přebíjí backlog: pokud má datum, bydlí v kalendáři; pokud ne, v backlogu
+    t.backlog = backlog;
+    if(date!==null) t.done=false;
+  } else {
+    state.utasks.push({
+      id:"u"+Date.now()+Math.random().toString(36).slice(2,6),
+      name:name, priority:prio, createdAt:Date.now(),
+      date:date, backlog:backlog, repeat:utRep, bouncer:bouncer, done:false
+    });
+  }
+  save(); closeUtSheet(); renderCheck();
+};
+
+document.getElementById("utDelete").onclick = function(){
+  if(!editingUtId) return;
+  var t = utaskById(editingUtId); if(!t) return;
+  askConfirm('Smazat úkol „'+t.name+'"?', "Smazat", function(){
+    state.utasks = state.utasks.filter(function(x){ return x.id!==editingUtId; });
+    save(); closeUtSheet(); renderCheck();
+  });
+};
+
 var cfmCb = null;
 function askConfirm(msg, yesLabel, cb){
   document.getElementById("cfmMsg").textContent = msg;
@@ -1075,12 +1798,12 @@ document.getElementById("fileImport").onchange = function(e){
   reader.readAsText(file);
 };
 
-/* ---------- swipe mezi pozicemi (0..2) ---------- */
+/* ---------- swipe mezi pozicemi (0..3) ---------- */
 function currentPageName(){
   return document.getElementById("pageOverview").classList.contains("active") ? "Overview" : "Today";
 }
 function updateSectionUI(){
-  var tx = (curSection * -(100/3)) + "%";
+  var tx = (curSection * -(100/4)) + "%";
   var tT = document.getElementById("trackToday"), tO = document.getElementById("trackOverview");
   tT.style.transition = "transform .25s ease"; tO.style.transition = "transform .25s ease";
   tT.style.transform = "translateX("+tx+")"; tO.style.transform = "translateX("+tx+")";
@@ -1089,9 +1812,10 @@ function updateSectionUI(){
   });
   var page = currentPageName();
   var title;
-  if(curSection===0) title = (page==="Today" ? "Tasks" : "Progres");
-  else if(curSection===1) title = (page==="Today" ? "Návyky" : "Zvykání si");
-  else title = (page==="Today" ? "Volno" : "Užívání si");
+  if(curSection===0)      title = (page==="Today" ? "Tasky" : "Progres");
+  else if(curSection===1) title = (page==="Today" ? "Úkoly" : "Přehled úkolů");
+  else if(curSection===2) title = (page==="Today" ? "Návyky" : "Zvykání si");
+  else                    title = (page==="Today" ? "Volno" : "Užívání si");
   document.getElementById("hTitle").textContent = title;
 }
 
@@ -1099,7 +1823,7 @@ function attachSwipe(pageEl, trackEl){
   // Pointer events = myš i prst najednou. touch-action:pan-y nechá svislý scroll
   // prohlížeči, vodorovná gesta chytám sám.
   var x0=0,y0=0,dx=0,dy=0,dragging=false,decided=false,horizontal=false,w=0,pid=null;
-  var MAX = 2; // poslední pozice
+  var MAX = MAXSEC; // poslední pozice (0..3)
   pageEl.addEventListener("pointerdown", function(e){
     if(e.pointerType==="mouse" && e.button!==0) return;
     x0=e.clientX; y0=e.clientY; dx=0; dy=0;
@@ -1145,7 +1869,8 @@ document.querySelectorAll("#pager .dot").forEach(function(d){
 /* ---------- FAB (přidá do aktuální pozice) ---------- */
 document.getElementById("fab").onclick = function(){
   if(curSection===0) openTaskSheet(null);
-  else openSheet(curSection-1, null); // pozice 1/2 -> habit sekce 0/1
+  else if(curSection===1) openUtSheet(null);
+  else openSheet(curSection-2, null); // pozice 2/3 -> habit sekce 0/1
 };
 
 /* ---------- tabs ---------- */
@@ -1157,7 +1882,7 @@ document.querySelectorAll(".tab").forEach(function(tab){
     document.getElementById("pageToday").classList.toggle("active", p==="Today");
     document.getElementById("pageOverview").classList.toggle("active", p==="Overview");
     document.getElementById("fab").style.display = "block";
-    if(p==="Today"){ renderTasksPanel(); renderTodayPanel(0); renderTodayPanel(1); }
+    if(p==="Today"){ renderTasksPanel(); renderCheck(); renderTodayPanel(0); renderTodayPanel(1); }
     else { renderProgresPanel(); renderOverviewPanel(0); renderOverviewPanel(1); }
     updateSectionUI();
   };
@@ -1165,7 +1890,7 @@ document.querySelectorAll(".tab").forEach(function(tab){
 
 /* ---------- init ---------- */
 function renderAll(){
-  renderTasksPanel(); renderTodayPanel(0); renderTodayPanel(1);
+  renderTasksPanel(); renderCheck(); renderTodayPanel(0); renderTodayPanel(1);
   renderProgresPanel(); renderOverviewPanel(0); renderOverviewPanel(1);
 }
 document.getElementById("hDate").textContent = fmtLong(today());
