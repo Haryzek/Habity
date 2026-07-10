@@ -2312,6 +2312,12 @@ document.querySelectorAll("#utDeadlineSeg .seg").forEach(function(seg){
     document.getElementById("utDate").style.display = (utDL==="date") ? "block" : "none";
   };
 });
+/* vyplněné datum si samo řekne o segment DD */
+document.getElementById("utDate").onchange = function(){
+  if(!this.value) return;
+  utDL = "date";
+  document.querySelectorAll("#utDeadlineSeg .seg").forEach(function(s){ s.classList.toggle("on", s.dataset.dl==="date"); });
+};
 /* repeat segmenty */
 document.querySelectorAll("#utRepeatSeg .seg").forEach(function(seg){
   seg.onclick = function(){
@@ -2370,6 +2376,7 @@ function openUtSheet(id){
   document.querySelectorAll("#utRepeatSeg .seg").forEach(function(s){ s.classList.remove("on"); });
   document.querySelectorAll("#utBouncerDow .seg").forEach(function(s){ s.classList.remove("on"); });
   document.getElementById("utDate").value = "";
+  document.getElementById("utDate").style.display = "none";
   document.getElementById("utBouncerDate").value = "";
 
   if(editingUtId){
