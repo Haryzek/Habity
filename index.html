@@ -39,7 +39,7 @@
     overflow-x:hidden;
     display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;
   }
-  .wrap{max-width:560px;margin:0 auto;padding:0 16px;flex:1;display:flex;flex-direction:column;}
+  .wrap{width:100%;max-width:560px;margin:0 auto;padding:0 16px;flex:1;display:flex;flex-direction:column;}
   header{
     width:100%;
     padding:calc(20px + env(safe-area-inset-top)) 16px 12px;
@@ -71,18 +71,13 @@
 
   /* ---- Move: jedna plocha (bez Check/Přehled), vertikální scroll ---- */
   #trackMove{width:100%;}
-  #trackMove .panel{width:100%;flex:0 0 100%;overflow-y:auto;padding:0 4px;}
-  .move-toolbar{padding:8px 2px 12px;}
-  .move-import{
-    background:var(--surface2);border:1px solid var(--border);color:var(--text);
-    font-family:var(--sans);font-size:13px;padding:7px 12px;border-radius:8px;cursor:pointer;
-  }
-  .move-import:active{transform:scale(.97);}
-  .move-week{display:flex;gap:2px;margin-bottom:8px;align-items:flex-start;}
-  .move-cell{flex:1 1 0;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;}
-  .move-cell svg{display:block;overflow:visible;}
-  .move-cell .mk{font-family:var(--mono);font-size:9px;color:var(--dim);line-height:1;}
-  .move-slot{height:46px;display:flex;align-items:center;justify-content:center;}
+  #trackMove .panel{width:100%;flex:0 0 100%;overflow-y:auto;padding:10px 2px 24px;}
+  .move-week{display:flex;gap:5px;margin-bottom:10px;align-items:stretch;}
+  .move-cell{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .move-disc{flex:1;width:100%;display:flex;align-items:center;justify-content:center;}
+  .move-cell svg{display:block;width:100%;height:auto;aspect-ratio:1/1;overflow:visible;}
+  .move-cell .mk{font-family:var(--mono);font-size:10px;color:var(--dim);line-height:1;}
+  .move-slot{height:42px;display:flex;align-items:center;justify-content:center;}
   .move-dot{width:5px;height:5px;border-radius:50%;background:var(--empty);}
 
   /* ---- today cards ---- */
@@ -706,10 +701,6 @@
   <section class="page" id="secMove">
     <div class="track" id="trackMove">
       <div class="panel">
-        <div class="move-toolbar">
-          <button id="moveImportBtn" class="move-import">Import Garmin dat</button>
-          <input type="file" id="moveImportFile" accept="application/json,.json" style="display:none">
-        </div>
         <div id="moveGrid"></div>
         <div class="empty-state" id="moveEmpty">
           Zatím žádná Garmin data.<br>Naimportuj <b style="color:var(--accent)">move_data.json</b> ze syncu.
@@ -844,10 +835,12 @@
     <div class="set-row">
       <button class="btn btn-primary" id="btnExport">Exportovat zálohu (JSON)</button>
       <button class="btn btn-ghost" id="btnImport">Načíst zálohu ze souboru</button>
+      <button class="btn btn-ghost" id="btnMoveImport">Import Garmin dat (Move)</button>
       <button class="btn btn-danger" id="btnClearOv" style="margin-top:0">Vymazat historii úkolů</button>
       <button class="btn btn-ghost" id="setClose">Zavřít</button>
     </div>
     <input type="file" id="fileImport" accept="application/json,.json" style="display:none">
+    <input type="file" id="moveImportFile" accept="application/json,.json" style="display:none">
   </div>
 </div>
 
@@ -2901,8 +2894,6 @@ document.getElementById("btnSettings").onclick = openSettings;
 })();
 
 /* ================= MOVE (Garmin kolečka) ================= */
-var MOVE = { SIZE:46, MIN_R:12, MAX_R:20, STROKE:4, GAP:2 };
-
 function mondayOf(d){ var off=(d.getDay()+6)%7; return addDays(d,-off); }
 
 // půlkruh plnící se ZDOLA; side: -1 = levá, +1 = pravá
@@ -2914,32 +2905,36 @@ function moveSemi(cx, cy, r, side, ratio){
   return { d:d, len:len, on:on };
 }
 
+// viewBox 100×100 pro všechny buňky; SVG se roztáhne na šířku buňky (CSS
+// width:100%), takže prstenec má napříč dnem stejnou px tloušťku (fix šířka
+// prstence), zatímco průměr kruhu roste s kcal.
 function moveCell(rec, isFuture){
   if(isFuture || !rec || (!rec.kcal && !rec.durMin && !rec.distM)){
-    return '<div class="move-cell"><div class="move-slot"><span class="move-dot"></span></div></div>';
+    return '<div class="move-cell"><div class="move-slot"><span class="move-dot"></span></div><span class="mk">&nbsp;</span></div>';
   }
   var caps = state.move.caps;
-  var S = MOVE.SIZE, cx = S/2, cy = S/2;
+  var cx = 50, cy = 50;
+  var STROKE = 9, GAP = 4, MINR = 24, MAXR = 44;
   var tt = Math.min(rec.kcal / (caps.kcal||1), 1);
-  var R = MOVE.MIN_R + (MOVE.MAX_R-MOVE.MIN_R) * tt;
-  var ringR = R - MOVE.STROKE/2 - MOVE.GAP;
+  var R = MINR + (MAXR-MINR) * tt;
+  var ringR = R - STROKE/2;
+  var innerR = Math.max(8, ringR - STROKE/2 - GAP);
   var distRatio = caps.dist>0 ? rec.distM/caps.dist : 0;
   var span = Math.max(1, caps.hrCap - caps.hrBase);
   var hrRatio = rec.hr ? (rec.hr - caps.hrBase)/span : 0;
   var L  = moveSemi(cx,cy,ringR,-1,distRatio);
   var Rr = moveSemi(cx,cy,ringR,+1,hrRatio);
-  var innerR = Math.max(3, R - MOVE.STROKE - MOVE.GAP - 1);
-  var fs = Math.max(10, Math.min(R*0.75, 15));
+  var fs = Math.max(15, Math.min(innerR*1.05, 30));
   var svg =
-    '<svg width="'+S+'" height="'+S+'" viewBox="0 0 '+S+' '+S+'">'+
-      '<circle cx="'+cx+'" cy="'+cy+'" r="'+innerR+'" fill="var(--accent)"/>'+
-      '<path d="'+L.d+'" fill="none" stroke="var(--empty)" stroke-width="'+MOVE.STROKE+'" stroke-linecap="round"/>'+
-      '<path d="'+Rr.d+'" fill="none" stroke="var(--empty)" stroke-width="'+MOVE.STROKE+'" stroke-linecap="round"/>'+
-      '<path d="'+L.d+'" fill="none" stroke="var(--done)" stroke-width="'+MOVE.STROKE+'" stroke-linecap="round" stroke-dasharray="'+L.on+' '+L.len+'"/>'+
-      '<path d="'+Rr.d+'" fill="none" stroke="var(--missed)" stroke-width="'+MOVE.STROKE+'" stroke-linecap="round" stroke-dasharray="'+Rr.on+' '+Rr.len+'"/>'+
-      '<text x="'+cx+'" y="'+cy+'" text-anchor="middle" dominant-baseline="central" font-family="var(--sans)" font-weight="700" font-size="'+fs+'" fill="#15120E">'+rec.durMin+'</text>'+
+    '<svg viewBox="0 0 100 100">'+
+      '<circle cx="50" cy="50" r="'+innerR+'" fill="var(--accent)"/>'+
+      '<path d="'+L.d+'" fill="none" stroke="var(--empty)" stroke-width="'+STROKE+'" stroke-linecap="round"/>'+
+      '<path d="'+Rr.d+'" fill="none" stroke="var(--empty)" stroke-width="'+STROKE+'" stroke-linecap="round"/>'+
+      '<path d="'+L.d+'" fill="none" stroke="var(--done)" stroke-width="'+STROKE+'" stroke-linecap="round" stroke-dasharray="'+L.on+' '+L.len+'"/>'+
+      '<path d="'+Rr.d+'" fill="none" stroke="var(--missed)" stroke-width="'+STROKE+'" stroke-linecap="round" stroke-dasharray="'+Rr.on+' '+Rr.len+'"/>'+
+      '<text x="50" y="51" text-anchor="middle" dominant-baseline="central" font-family="var(--sans)" font-weight="700" font-size="'+fs+'" fill="#15120E">'+rec.durMin+'</text>'+
     '</svg>';
-  return '<div class="move-cell">'+svg+'<span class="mk">'+rec.kcal+'</span></div>';
+  return '<div class="move-cell"><div class="move-disc">'+svg+'</div><span class="mk">'+rec.kcal+'</span></div>';
 }
 
 function renderMove(){
@@ -3004,7 +2999,7 @@ function importMoveData(arr){
 }
 
 (function(){
-  var btn = document.getElementById("moveImportBtn");
+  var btn = document.getElementById("btnMoveImport");
   var file = document.getElementById("moveImportFile");
   if(!btn || !file) return;
   btn.onclick = function(){ file.click(); };
@@ -3013,7 +3008,7 @@ function importMoveData(arr){
     if(!f) return;
     var r = new FileReader();
     r.onload = function(){
-      try{ importMoveData(JSON.parse(r.result)); }
+      try{ importMoveData(JSON.parse(r.result)); closeSettings(); }
       catch(err){ toast("Nepodařilo se načíst JSON."); }
     };
     r.readAsText(f);
