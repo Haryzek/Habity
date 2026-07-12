@@ -2743,7 +2743,7 @@ document.getElementById("btnExport").onclick = function(){
   var blob = new Blob([data], {type:"application/json"});
   var url = URL.createObjectURL(blob);
   var a = document.createElement("a");
-  a.href = url; a.download = "habity-zaloha-"+key(today())+".json";
+  a.href = url; a.download = "habity-zaloha.json";
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
 };
