@@ -1,6 +1,6 @@
 Ahoj osle!
 
-# HABITY — README pro pokračování (stav po přidání sekce Move + Garmin sync)
+# HABITY — README pro pokračování (stav po přidání sekce Litánie)
 
 Tohle čte Claude, který přebírá práci na appce **Habity** v nové konverzaci.
 Cílem je zahučet do věci bez ztráty kontextu. Čti to celé, ať chápeš nejen
@@ -34,10 +34,11 @@ reálné potřeby, ne dopředu přeengineerované.
 
 **Sdílená dohoda Bob ↔ Claude:** stavět dál do jednoho souboru, dokud to drží
 pohromadě. Claude má **proaktivně křiknout**, až bude refactoring nebo rozdělení
-souboru na místě. *(Aktuální stav: soubor má ~3030 řádků / ~136 KB. Pořád
-udržitelné, ale roste — přibyla sekce Move (viz sekce 5). Až přibude další velká
-sekce nebo se začne logovat per-task historie, je čas zvážit řez — ale Bob to
-nemá rád dělat předčasně, takže ne dřív, než to bude fakt potřeba.)*
+souboru na místě. *(Aktuální stav: soubor má ~3590 řádků / ~160 KB. Pořád
+udržitelné, ale roste — přibyla sekce Move (viz sekce 5) a Litánie (viz sekce 6).
+Až přibude další velká sekce nebo se začne logovat per-task historie, je čas
+zvážit řez — ale Bob to nemá rád dělat předčasně, takže ne dřív, než to bude
+fakt potřeba.)*
 
 **Prostředí a dodávka:** Projekt je **lokální git repo** na `E:\_dev\habity`
 (Claude Code, Windows/PowerShell). Edituje se přímo `index.html`, po zásahu
@@ -59,15 +60,26 @@ obsahem `<script>`) a párování tagů.
 spodní taby (Check / Přehled) a swipe přepínal mezi 4 sekcemi. **Teď je to
 obráceně:**
 
-- **Spodní taby = 5 sekcí.** Pět tlačítek dole: **Progress · Tasks · Habits ·
-  Free · Move** (pořadí zleva odpovídá pozici 0–4). Klik na tab vždycky vede na
-  **Check** rovinu té sekce (Move Check/Přehled nemá — viz níž).
+- **Spodní taby = 6 sekcí.** Šest tlačítek dole: **Progress · Tasks · Habits ·
+  Free · Litánie · Move**. Klik na tab vždycky vede na **Check** rovinu té sekce
+  (Move ani Litánie Check/Přehled nemají — viz níž).
+  ⚠️ **Past pořadí vs. index:** vizuální pořadí v navu ≠ `curSection` index!
+  Litánie je v navu **mezi Free a Move**, ale logicky má **`curSection=5`**
+  (Move zůstal 4). Udělalo se to schválně, aby se nepřečíslovávala Move
+  (`curSection===4` je po kódu na spoustě míst). Tab má `data-sec="5"`, ale sedí
+  v DOMu mezi Free a Move — pořadí `.page` sekcí je čistě vizuální, logiku řídí
+  index. **Když přidáváš další sekci, drž se tohohle: nový index na konec, tab
+  umísti kam chceš.**
+- **Úzký nav → jen ikony.** Při 6 tabech se popisky na mobilu nevejdou:
+  `@media (max-width:430px)` schová `.tab .tl` (label ve spanu) a nechá jen ikony.
 - **Swipe doleva/doprava = Check ↔ Přehled.** Horizontální swipe (nebo dvě tečky
   pageru nahoře) přepíná mezi Check a Přehled rovinou. Tahle pozice je
   **GLOBÁLNÍ a sdílená** napříč sekcemi 0–3 (`curView`: 0=Check, 1=Přehled) —
   přepnu na Přehled v Tasks, kliknu na Free tab, jsem pořád na Přehledu.
-  **Move (pozice 4) je výjimka** — má jen jednu plochu, swipe/pager/FAB se na ni
-  nevztahují.
+  **Move (4) a Litánie (5) jsou výjimky** — mají jen jednu plochu, swipe/pager se
+  na ně nevztahují. Rozdíl: Move nemá ani FAB (data z importu), **Litánie FAB má**
+  (přidání nové věty). `updateUI` proto řeší zvlášť `noPager = 4||5` a
+  `fab hidden = jen 4`.
 - **Data/Nastavení** (export/import JSON, vymazat historii) = **ozubené kolečko ⚙
   v headeru** nahoře vedle data. Už NENÍ spodní tab.
 
@@ -78,15 +90,17 @@ obráceně:**
 | 2 | **Habits** | dnešní odškrtávání | mřížka 3×30 | Habit tracker. |
 | 3 | **Free** | dnešní odškrtávání **+ backlogy** | mřížka 3×30 (agreguje vše) | Druhý habit tracker (volnočas). **Nově má backlogy** — viz 3b. |
 | 4 | **Move** | — (jedna plocha) | — | Garmin aktivita jako kolečka po týdnech. Data z Garmin Connectu, plní se samy. **Viz sekce 5.** |
+| 5 | **Litánie** | — (jedna plocha) | — | Podpůrné věty/přerámování, filtrované tagy. **Soukromá data — import z disku, nikdy online.** V navu mezi Free a Move. **Viz sekce 6.** |
 
 Pozn.: názvy v UI jsou anglicky (Progress/Tasks/Habits/Free/Move), zbytek appky
 česky. `hTitle` nahoře ukazuje jen název sekce (ne rozlišuje Check/Přehled).
 
-**Struktura DOMu:** 5 `<section class="page">` (`secProgress`/`secTasks`/`secNavyky`/
-`secVolno`/`secMove`). Sekce 0–3 mají jeden `.track` se **dvěma** panely
-(Check + Přehled), track šířka 200 %, panel 50 %. **`secMove` má jen jeden panel**
-(override `#trackMove{width:100%}`, translateX vždy 0). Aktivní je vždy jen sekce
-odpovídající `curSection` (`.page.active`).
+**Struktura DOMu:** 6 `<section class="page">` (`secProgress`/`secTasks`/`secNavyky`/
+`secVolno`/`secMove`/`secLitanie`). Sekce 0–3 mají jeden `.track` se **dvěma** panely
+(Check + Přehled), track šířka 200 %, panel 50 %. **`secMove` i `secLitanie` mají
+jen jeden panel** (translateX vždy 0). Aktivní je vždy jen sekce odpovídající
+`curSection` (`.page.active`). `SEC_PAGES`/`SEC_TRACKS`/`SEC_TITLES` mají teď
+**6 položek** (index 5 = Litánie).
 
 Swipe engine: **Pointer Events API** (ne touch events — kvůli testování myší na
 desktopu). `touch-action: pan-y` nechává vertikální scroll prohlížeči,
@@ -165,7 +179,14 @@ destruktivní migrace. v1 → v2 migrace pro stará data existuje taky.
   move: {
     days: { "YYYY-MM-DD": {kcal, durMin, distM, hr} },  // agregát dne (píše skript/import)
     caps: { kcal:679, dist:3729, hrBase:55, hrCap:130 }  // stropy prstenců; kcal/dist p90 z dat, hr napevno
-  }
+  },
+
+  // ----- LITÁNIE (viz sekce 6) — SOUKROMÁ data, jen v localStorage, nikdy online -----
+  litBase: [ {id,text,temata,casti,priorita,oblibena,aktivni} ],             // základ z importu litanie.json
+  litTemata: [...], litCasti: [...],                                         // definice tagů (z hlavičky jsonu)
+  litOverlay: { "3": {text?,temata?,casti?,priorita?,oblibena?,aktivni?} },  // přepisy základních vět, klíč = string id
+  litNew: [ {id:"ul…",text,temata,casti,priorita,oblibena,aktivni} ],        // uživatelem přidané věty
+  litFilter: { temata:[], casti:[], prioMin:1, fav:false, noTags:false, expanded:false, search:"" }
 }
 ```
 
@@ -407,7 +428,85 @@ riziko konfliktů + nutná auth. Velký samostatný projekt, až bude potřeba.
 
 ---
 
-## 6. Vizuál / styl
+## 6. LITÁNIE — podpůrné věty s tagy (pozice 5)
+
+Sekce **Litánie** (v navu mezi Free a Move, `curSection=5`) je knihovna
+podpůrných vět / přerámování / manter / vděčností, vytažená z Bobova Evernotu
+(10 let, deduplikace + AI tagging). **1254 vět**, tagované tématy (22) a částmi
+(13, IFS-style figury). Účel dvojí: **čistit** (Bob prochází a vyhazuje balast)
+a **tvořit** (přidávat nové). UI je klon sekce Free — chip filtry, fulltext,
+slider priority.
+
+### 6a. Datová architektura — SOUKROMÁ data, nikdy ne online (DŮLEŽITÉ)
+
+> ⚠️ **Litánie jsou hodně osobní a NESMÍ jít na veřejný GitHub/Pages.** `litanie.json`
+> se **nikdy necommituje** — bydlí v `local/` (globálně git-ignorováno). Na rozdíl
+> od Move (Garmin data = veřejně OK) se litánie do repa nedostanou. Pozor při
+> jakémkoli commitu, ať to tam omylem neproklouzne.
+
+Zdroj se **jednorázově naimportuje z disku** (⚙ Data → „Importovat litánie") do
+localStorage. Odtud data žijí jen v localStorage a v JSON exportu — **jako zbytek
+appky** (návyky/tasky). Čtyři kusy ve `state`:
+- `litBase[]` — základní věty (z importu). `litTemata[]` / `litCasti[]` = definice
+  tagů z hlavičky jsonu. **Toto je jen v localStorage, git to nekryje → zálohovat
+  exportem.**
+- `litOverlay[id]` — částečné přepisy základních vět (text/temata/casti/priorita/
+  oblibena/aktivni). Klíč = **string** id. Ukládá se jen změněné pole.
+- `litNew[]` — uživatelem přidané věty (id `"ul"+timestamp`).
+- `litFilter` — persistovaný stav filtru.
+
+**Runtime cache:** `LIT_BASE`/`LIT_TEMATA`/`LIT_CASTI` (globály) se při startu
+naplní ze `state` přes `litLoadFromState()` (v initu, místo dřívějšího fetche).
+`LIT_LOADED = LIT_BASE.length>0`.
+
+**Import** (`importLitanie(d)`, volaný z `#btnImportLit` / `#fileImportLit` v ⚙):
+naparsuje `litanie.json`, naplní `state.litBase` + definice tagů, `save()`,
+`litLoadFromState()`. Reimport (nová verze) přepíše base; overlay/litNew drží dál
+(id stabilní). **Import tlačítko je dočasné** — po prvním nasátí se odstraní
+(stejně jako se to udělalo s Garmin importem).
+
+**Slití (`litEffective`):** vezme `LIT_BASE`, na každou větu napasuje
+`litOverlay[id]` (přebije základ), přidá `litNew`. Vrací sjednocený seznam s
+flagem `_new`.
+
+**Proč import a ne Pages fetch:** Pages je veřejné bez auth (viz sekce 5d, stejný
+důvod proč se osobní sekce nesmí vystavovat). „Push na jedno stažení a pak smazat"
+= iluze bezpečí (git historie, forky, cache, archivy). Proto data nikdy neopustí
+disk/localStorage. Viz Bobova paměť „litánie jsou soukromé".
+
+### 6b. UI a interakce
+
+- **Seznam:** karty `text · hvězdička · P{priorita}`. Klik na text = editace
+  (`openLitSheet`), klik na hvězdičku = toggle oblíbené (`litToggleFav`). Delegace:
+  **jeden** click handler na `#litList` (ne 1254× per karta).
+- **Strop vykreslení 300 karet** (`CAP` v `renderLitList`) — stovky `line-clamp`
+  karet by sekaly render. Přes 300 se ukáže poznámka „…a dalších N, zúž filtrem".
+  Čištění se dělá po dávkách (filtr/search), takže strop nevadí. Řazení: oblíbené
+  nahoře → priorita DESC → id ASC.
+- **Filtr** (`renderLitFilterBar`, klon Free): dvě chip skupiny (Témata modré,
+  Části červené), slider priorita-min (1–5), mini-toggle „Bez tagů", Reset, sbalení.
+  Vedle filtru **vždy viditelná rychlá hvězdička** (jen oblíbené). Fulltext
+  (`litSearch`) sdílí fuzzy engine s Free (`normSearchText`/`fuzzyWordMatch`).
+- **Editace/přidání** (`litSheet`): `<textarea>` (věty jsou i dlouhé odstavce, max
+  1570 znaků — auto-grow do 40vh), slider priority 1–5, toggle oblíbená, chipy témat
+  a částí. Přidání přes FAB (`openLitSheet(null)`). Ukládání: nová → `litNew.push`,
+  úprava základní → zápis do `litOverlay[id]`, úprava `_new` → mutace objektu.
+- **Mazání = `aktivni:false`** (`litSetAktivni`), ne fyzické smazání — Bob může
+  vzít zpět a za půl roku uvidí, co vyházel. Po smazání **undo lišta** (`#undoBar`,
+  6 s, tlačítko „Vrátit" → `litSetAktivni(id,true)`, přičemž pokud overlay držel
+  jen `aktivni`, celý se smaže, ať nezůstává balast).
+- **Počítadlo** (`#litCount`): „`<zobrazeno>` z `<aktivních>` · `<N>` vyházeno".
+
+### 6c. Rotace „piňa dne" — VĚDOMĚ NEUDĚLÁNO
+
+Alterego navrhovalo denní váženou rotaci (servírovat větu dne dle priority+oblíbené).
+Bob to pro první verzi **odmítl** — „na špinavý databázi to stejně servíruje blbosti".
+Až bude databáze pročištěná, je to kandidát na druhé kolo. Priorita a `oblibena` v
+datech na to už jsou připravené.
+
+---
+
+## 7. Vizuál / styl
 
 Tmavé „kokosové" téma. CSS proměnné v `:root`:
 `--bg:#15120E --surface:#201B15 --surface2:#2A241C --border:#3A332A
@@ -421,7 +520,7 @@ ošetřen pro rychlé klikání. Jen na ✓ (ne ✕ ani přesun). Dopaminová od
 
 ---
 
-## 7. Co je hotové a co Boba čeká
+## 8. Co je hotové a co Boba čeká
 
 **HOTOVÉ a matematicky otestované** (přes Node simulace): repeat respawn (7
 scénářů včetně blogu/finančáku/přetečení 31.→28.), rollup (mix repeat/ne-repeat/
@@ -444,6 +543,16 @@ U Move: **reálný auto-commit+push** se spustí až přijdou nová data (zatím
 ověřeno jen „beze změny nic k pushnuti"); dlouhý výpadek syncu >90 dní udělá
 nedoplnitelnou díru (skript se tak hluboko nedívá) — dá se zvednout okno `DAYS`.
 
+**Litánie HOTOVÉ a ověřené** (viz sekce 6): lokální import + overlay architektura
+otestovaná end-to-end přes DOM/localStorage (import 1254 vět → localStorage,
+fav→overlay, delete+undo, edit→overlay, nová věta→litNew, reload bez fetche →
+data z localStorage, celý state v exportu), fuzzy search, chip filtry, strop 300,
+undo lišta. Ověřeno, že appka na startu `litanie.json` **nikde nestahuje**
+(žádný síťový request). Screenshot nástroj v prostředí timeoutoval, ale reflow
+6 ms + 0 chyb → appka svižná. Zbývá: **Bob jednorázově naimportuje** `litanie.json`
+z `local/` přes ⚙, pak se import tlačítko odstraní; čištění databáze je na Bobovi
+(dlouhodobě); rotace „piňa dne" odložená (6c).
+
 **Filozofie dalšího vývoje:** Bob řekl „základ máme, bude to o dolaďování během
 úkolování". Čekej drobné UX úpravy z reálného provozu, ne velké přestavby.
 Nepřeengineeruj dopředu. Když Bob přijde s úpravou, zeptej se postupně po jedné
@@ -451,14 +560,16 @@ otázce na nejasné hrany, pak to postav a otestuj.
 
 ---
 
-## 8. Tipy pro zásahy do kódu
+## 9. Tipy pro zásahy do kódu
 
 - Soubor je strukturovaný: `<style>` → HTML (header s ⚙, pager se 2 tečkami,
   **5 `<section>` pages** — 0–3 s `track`/dvěma `panel`, `secMove` s jedním —
   sheety, modaly) → `<script>` (state/normalize/load/save → date helpers →
   NÁVYKY → projektové ÚKOLY → TASKS úkolová sekce → Přehled úkolů →
   confirm/toast/piňa → settings → **MOVE (renderMove/moveCell/importMoveData/
-  fetchMoveData/recalcMoveCaps)** → navigace (swipe/taby/pager) → FAB → init).
+  fetchMoveData/recalcMoveCaps)** → **LITÁNIE (litLoadFromState/importLitanie/
+  litEffective/matchesLitFilter/renderLitList/renderLitFilterBar/openLitSheet/
+  litDelete+undo)** → navigace (swipe/taby/pager) → FAB → init).
 - **Navigace:** `updateUI()` je centrální — transformuje tracky podle `curView`
   (Move track vždy 0), přepíná `.page.active` podle `curSection`, syncuje
   taby/pager/title, skrývá pager+FAB na Move. Taby nastavují `curSection`, swipe
