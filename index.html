@@ -69,6 +69,22 @@
   .track{display:flex;width:200%;flex:1;transition:transform .25s ease;will-change:transform;}
   .panel{width:50%;flex:0 0 50%;}
 
+  /* ---- Move: jedna plocha (bez Check/Přehled), vertikální scroll ---- */
+  #trackMove{width:100%;}
+  #trackMove .panel{width:100%;flex:0 0 100%;overflow-y:auto;padding:0 4px;}
+  .move-toolbar{padding:8px 2px 12px;}
+  .move-import{
+    background:var(--surface2);border:1px solid var(--border);color:var(--text);
+    font-family:var(--sans);font-size:13px;padding:7px 12px;border-radius:8px;cursor:pointer;
+  }
+  .move-import:active{transform:scale(.97);}
+  .move-week{display:flex;gap:2px;margin-bottom:8px;align-items:flex-start;}
+  .move-cell{flex:1 1 0;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;}
+  .move-cell svg{display:block;overflow:visible;}
+  .move-cell .mk{font-family:var(--mono);font-size:9px;color:var(--dim);line-height:1;}
+  .move-slot{height:46px;display:flex;align-items:center;justify-content:center;}
+  .move-dot{width:5px;height:5px;border-radius:50%;background:var(--empty);}
+
   /* ---- today cards ---- */
   .card{
     background:var(--surface);border:1px solid var(--border);border-radius:8px;
@@ -685,6 +701,22 @@
       </div>
     </div>
   </section>
+
+  <!-- SEKCE: MOVE (Garmin aktivita — kolečka po týdnech) -->
+  <section class="page" id="secMove">
+    <div class="track" id="trackMove">
+      <div class="panel">
+        <div class="move-toolbar">
+          <button id="moveImportBtn" class="move-import">Import Garmin dat</button>
+          <input type="file" id="moveImportFile" accept="application/json,.json" style="display:none">
+        </div>
+        <div id="moveGrid"></div>
+        <div class="empty-state" id="moveEmpty">
+          Zatím žádná Garmin data.<br>Naimportuj <b style="color:var(--accent)">move_data.json</b> ze syncu.
+        </div>
+      </div>
+    </div>
+  </section>
 </div>
 
 <button class="fab" id="fab" aria-label="Přidat">+</button>
@@ -694,6 +726,7 @@
   <button class="tab active" data-sec="1"><span class="ic">✓</span>Tasks</button>
   <button class="tab" data-sec="2"><span class="ic">↻</span>Habits</button>
   <button class="tab" data-sec="3"><span class="ic">☆</span>Free</button>
+  <button class="tab" data-sec="4"><span class="ic">◉</span>Move</button>
 </nav>
 
 <!-- ADD / EDIT HABIT SHEET -->
@@ -895,11 +928,14 @@ var DURATION_TICKS = ["0","5min","15min","30min","1h","2h","3h","6h","1d","3d","
 var state = load();
 
 function blankState(){
+  // Move: výchozí stropy prstenců (kcal/dist se přepočítají z dat při importu;
+  // hrBase/hrCap dle Bobova režimu — klidový ~55, zátěž ~130)
   return {
     sections:[ {habits:[],log:{}}, {habits:[],log:{}} ],
     tasks:[], backlogs:["Wip","Done"], utasks:[], daily:{},
     taskBacklogSel:["Wip"],
-    freeFilter:{ tags:{}, durationMin:0, durationMax:16, funMin:1, expanded:false, search:"" }
+    freeFilter:{ tags:{}, durationMin:0, durationMax:16, funMin:1, expanded:false, search:"" },
+    move:{ days:{}, caps:{ kcal:600, dist:5000, hrBase:55, hrCap:130 } }
   };
 }
 
@@ -1061,6 +1097,29 @@ function normalize(o){
     s.freeFilter.funMin = fm;
     s.freeFilter.expanded = !!o.freeFilter.expanded;
     if(typeof o.freeFilter.search==="string") s.freeFilter.search = o.freeFilter.search.slice(0,100);
+  }
+
+  // ---- Move (Garmin denní data + stropy prstenců) ----
+  if(o.move && typeof o.move==="object"){
+    if(o.move.days && typeof o.move.days==="object"){
+      Object.keys(o.move.days).forEach(function(k){
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
+        var d = o.move.days[k];
+        if(!d || typeof d!=="object") return;
+        s.move.days[k] = {
+          kcal:   Math.max(0, Math.round(+d.kcal   || 0)),
+          durMin: Math.max(0, Math.round(+d.durMin || 0)),
+          distM:  Math.max(0, Math.round(+d.distM  || 0)),
+          hr:     (typeof d.hr==="number" && d.hr>0) ? Math.round(d.hr) : null
+        };
+      });
+    }
+    if(o.move.caps && typeof o.move.caps==="object"){
+      var c = o.move.caps;
+      ["kcal","dist","hrBase","hrCap"].forEach(function(f){
+        if(typeof c[f]==="number" && c[f]>0) s.move.caps[f] = Math.round(c[f]);
+      });
+    }
   }
   return s;
 }
@@ -2723,12 +2782,14 @@ document.getElementById("btnClearOv").onclick = function(){
 };
 
 /* ---------- navigace: taby = sekce (0..3), swipe/pager = Check<->Přehled (globální) ---------- */
-var SEC_PAGES  = ["secProgress","secTasks","secNavyky","secVolno"];
-var SEC_TRACKS = ["trackProgress","trackTasks","trackNavyky","trackVolno"];
-var SEC_TITLES = ["Progress","Tasks","Habits","Free"];
+var SEC_PAGES  = ["secProgress","secTasks","secNavyky","secVolno","secMove"];
+var SEC_TRACKS = ["trackProgress","trackTasks","trackNavyky","trackVolno","trackMove"];
+var SEC_TITLES = ["Progress","Tasks","Habits","Free","Move"];
 
 function applyViewToTrack(trackEl, animate){
   trackEl.style.transition = animate ? "transform .25s ease" : "none";
+  // Move nemá Check/Přehled — jedna plocha, žádný posun
+  if(trackEl.id==="trackMove"){ trackEl.style.transform="translateX(0)"; return; }
   trackEl.style.transform = "translateX("+(curView===0 ? "0%" : "-50%")+")";
 }
 function updateUI(){
@@ -2743,6 +2804,11 @@ function updateUI(){
     d.classList.toggle("on", +d.dataset.view===curView);
   });
   document.getElementById("hTitle").textContent = SEC_TITLES[curSection];
+  // Move: bez FABu (data z importu) a bez pageru (nemá Check/Přehled)
+  var isMove = curSection===4;
+  document.getElementById("fab").style.display = isMove ? "none" : "";
+  var pgr = document.getElementById("pager");
+  if(pgr) pgr.style.visibility = isMove ? "hidden" : "";
 }
 
 function attachSwipe(pageEl, trackEl){
@@ -2786,6 +2852,7 @@ function attachSwipe(pageEl, trackEl){
   pageEl.addEventListener("pointercancel", end);
 }
 SEC_PAGES.forEach(function(id, i){
+  if(id==="secMove") return; // Move nemá Check/Přehled, swipe nepřipojujeme
   attachSwipe(document.getElementById(id), document.getElementById(SEC_TRACKS[i]));
 });
 
@@ -2797,6 +2864,7 @@ document.querySelectorAll("#pager .dot").forEach(function(d){
 document.getElementById("fab").onclick = function(){
   if(curSection===0) openTaskSheet(null);
   else if(curSection===1) openUtSheet(null);
+  else if(curSection>=4) return; // Move nemá přidávání přes FAB
   else openSheet(curSection-2, null); // sekce 2/3 -> habit sekce 0/1
 };
 
@@ -2832,10 +2900,132 @@ document.getElementById("btnSettings").onclick = openSettings;
   apply();
 })();
 
+/* ================= MOVE (Garmin kolečka) ================= */
+var MOVE = { SIZE:46, MIN_R:12, MAX_R:20, STROKE:4, GAP:2 };
+
+function mondayOf(d){ var off=(d.getDay()+6)%7; return addDays(d,-off); }
+
+// půlkruh plnící se ZDOLA; side: -1 = levá, +1 = pravá
+function moveSemi(cx, cy, r, side, ratio){
+  var sweep = side>0 ? 1 : 0;
+  var len = Math.PI * r;
+  var on = len * Math.max(0, Math.min(ratio,1));
+  var d = "M "+cx+" "+(cy+r)+" A "+r+" "+r+" 0 0 "+sweep+" "+cx+" "+(cy-r);
+  return { d:d, len:len, on:on };
+}
+
+function moveCell(rec, isFuture){
+  if(isFuture || !rec || (!rec.kcal && !rec.durMin && !rec.distM)){
+    return '<div class="move-cell"><div class="move-slot"><span class="move-dot"></span></div></div>';
+  }
+  var caps = state.move.caps;
+  var S = MOVE.SIZE, cx = S/2, cy = S/2;
+  var tt = Math.min(rec.kcal / (caps.kcal||1), 1);
+  var R = MOVE.MIN_R + (MOVE.MAX_R-MOVE.MIN_R) * tt;
+  var ringR = R - MOVE.STROKE/2 - MOVE.GAP;
+  var distRatio = caps.dist>0 ? rec.distM/caps.dist : 0;
+  var span = Math.max(1, caps.hrCap - caps.hrBase);
+  var hrRatio = rec.hr ? (rec.hr - caps.hrBase)/span : 0;
+  var L  = moveSemi(cx,cy,ringR,-1,distRatio);
+  var Rr = moveSemi(cx,cy,ringR,+1,hrRatio);
+  var innerR = Math.max(3, R - MOVE.STROKE - MOVE.GAP - 1);
+  var fs = Math.max(10, Math.min(R*0.75, 15));
+  var svg =
+    '<svg width="'+S+'" height="'+S+'" viewBox="0 0 '+S+' '+S+'">'+
+      '<circle cx="'+cx+'" cy="'+cy+'" r="'+innerR+'" fill="var(--accent)"/>'+
+      '<path d="'+L.d+'" fill="none" stroke="var(--empty)" stroke-width="'+MOVE.STROKE+'" stroke-linecap="round"/>'+
+      '<path d="'+Rr.d+'" fill="none" stroke="var(--empty)" stroke-width="'+MOVE.STROKE+'" stroke-linecap="round"/>'+
+      '<path d="'+L.d+'" fill="none" stroke="var(--done)" stroke-width="'+MOVE.STROKE+'" stroke-linecap="round" stroke-dasharray="'+L.on+' '+L.len+'"/>'+
+      '<path d="'+Rr.d+'" fill="none" stroke="var(--missed)" stroke-width="'+MOVE.STROKE+'" stroke-linecap="round" stroke-dasharray="'+Rr.on+' '+Rr.len+'"/>'+
+      '<text x="'+cx+'" y="'+cy+'" text-anchor="middle" dominant-baseline="central" font-family="var(--sans)" font-weight="700" font-size="'+fs+'" fill="#15120E">'+rec.durMin+'</text>'+
+    '</svg>';
+  return '<div class="move-cell">'+svg+'<span class="mk">'+rec.kcal+'</span></div>';
+}
+
+function renderMove(){
+  var grid = document.getElementById("moveGrid");
+  var empty = document.getElementById("moveEmpty");
+  if(!grid) return;
+  var days = state.move.days;
+  var keys = Object.keys(days);
+  if(!keys.length){ grid.innerHTML=""; if(empty) empty.style.display=""; return; }
+  if(empty) empty.style.display="none";
+  keys.sort();
+  var first = new Date(keys[0]+"T00:00:00");
+  var t = today();
+  var startMon = mondayOf(first), endMon = mondayOf(t);
+  var html = "";
+  for(var wk=new Date(endMon); wk>=startMon; wk=addDays(wk,-7)){
+    html += '<div class="move-week">';
+    for(var i=0;i<7;i++){
+      var d = addDays(wk,i);
+      html += moveCell(days[key(d)], d>t);
+    }
+    html += '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+// přepočet stropů z importovaných dat (90. percentil); tep necháváme
+// na Bobově režimu (base/cap), ať je prstenec citlivý i při málo datech
+function recalcMoveCaps(){
+  var days = state.move.days, keys = Object.keys(days);
+  if(!keys.length) return;
+  function p90(vals){
+    var a = vals.filter(function(v){ return v>0; }).sort(function(x,y){ return x-y; });
+    if(!a.length) return null;
+    var i=(a.length-1)*0.9, lo=Math.floor(i), hi=Math.ceil(i);
+    return lo===hi ? a[lo] : a[lo]+(a[hi]-a[lo])*(i-lo);
+  }
+  var kc = p90(keys.map(function(k){ return days[k].kcal; }));
+  var di = p90(keys.map(function(k){ return days[k].distM; }));
+  if(kc) state.move.caps.kcal = Math.round(kc);
+  if(di) state.move.caps.dist = Math.round(di);
+}
+
+function importMoveData(arr){
+  if(!Array.isArray(arr)){ toast("Čekal jsem pole dní (JSON array)."); return; }
+  var n=0;
+  arr.forEach(function(d){
+    if(!d || typeof d!=="object") return;
+    if(typeof d.date!=="string" || !/^\d{4}-\d{2}-\d{2}$/.test(d.date)) return;
+    state.move.days[d.date] = {
+      kcal:   Math.max(0, Math.round(+d.kcal   || 0)),
+      durMin: Math.max(0, Math.round(+d.durMin || 0)),
+      distM:  Math.max(0, Math.round(+d.distM  || 0)),
+      hr:     (typeof d.hr==="number" && d.hr>0) ? Math.round(d.hr) : null
+    };
+    n++;
+  });
+  recalcMoveCaps();
+  save();
+  renderMove();
+  toast("Naimportováno "+n+" dní. 🥥");
+}
+
+(function(){
+  var btn = document.getElementById("moveImportBtn");
+  var file = document.getElementById("moveImportFile");
+  if(!btn || !file) return;
+  btn.onclick = function(){ file.click(); };
+  file.onchange = function(e){
+    var f = e.target.files && e.target.files[0];
+    if(!f) return;
+    var r = new FileReader();
+    r.onload = function(){
+      try{ importMoveData(JSON.parse(r.result)); }
+      catch(err){ toast("Nepodařilo se načíst JSON."); }
+    };
+    r.readAsText(f);
+    e.target.value = "";
+  };
+})();
+
 /* ---------- init ---------- */
 function renderAll(){
   renderTasksPanel(); renderCheck(); renderFreeFilterBar(); renderTodayPanel(0); renderTodayPanel(1);
   renderProgresPanel(); renderUtOverview(); renderOverviewPanel(0); renderOverviewPanel(1);
+  renderMove();
 }
 var freeSearchEl = document.getElementById("freeSearch");
 freeSearchEl.value = state.freeFilter.search || "";
