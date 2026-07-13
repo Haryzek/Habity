@@ -584,10 +584,12 @@
     text-transform:uppercase;letter-spacing:.5px;margin:2px 2px 8px;
   }
   .lit-count b{color:var(--accent);font-weight:700;}
-  .lit-search-row{display:flex;align-items:center;gap:8px;}
-  .lit-search-row .free-search{flex:1;min-width:0;}
+  .lit-search-row{display:flex;align-items:stretch;gap:8px;}
+  /* input má globální margin-bottom; ve flexu se počítá do křížové výšky a
+     roztahoval by hvězdu (39→51). Vynulovat, spacing dole řeší .free-search-row. */
+  .lit-search-row .free-search{flex:1;min-width:0;margin-bottom:0;}
   .lit-fav-toggle{
-    flex-shrink:0;width:44px;height:36px;border-radius:10px;cursor:pointer;
+    flex-shrink:0;width:44px;align-self:stretch;border-radius:10px;cursor:pointer;
     background:var(--surface);border:1px solid var(--border);color:var(--dim);
     display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;
   }
@@ -3662,6 +3664,38 @@ renderAll();
 updateUI();
 fetchMoveData();
 litLoadFromState();
+
+// Optické vycentrování glyfů v tabbaru. Unicode ikony (✓ ↻ ☆ ❝ ◉) mají různé
+// průhledné okraje (side-bearingy) i různou vertikální polohu inku (např. ❝ plave
+// vysoko nad baseline). Box je vycentrovaný, ale oko vidí glyf odsazený. CSS nezná
+// obrys glyfu; změříme skutečný ink-bbox na canvasu a dorovnáme translateX/Y tak,
+// aby optický střed každého glyfu seděl na společnou linku (medián svislé polohy).
+function centerTabIcons(){
+  var ctx = document.createElement("canvas").getContext("2d");
+  ctx.textBaseline = "alphabetic";
+  var items = [];
+  document.querySelectorAll(".tab .ic").forEach(function(el){
+    var cs = getComputedStyle(el);
+    ctx.font = cs.fontStyle+" "+cs.fontWeight+" "+cs.fontSize+" "+cs.fontFamily;
+    var m = ctx.measureText(el.textContent);
+    if(m.actualBoundingBoxLeft==null || m.actualBoundingBoxAscent==null) return;
+    var dx = m.width/2 - (m.actualBoundingBoxRight - m.actualBoundingBoxLeft)/2;
+    var inkMid = (-m.actualBoundingBoxAscent + m.actualBoundingBoxDescent)/2; // vůči baseline, nahoru záporně
+    items.push({ el:el, dx:dx, inkMid:inkMid });
+  });
+  if(!items.length) return;
+  // cíl = medián svislé polohy inku → většina glyfů se nehne, srovnají se jen odskočilci
+  var mids = items.map(function(i){ return i.inkMid; }).sort(function(a,b){ return a-b; });
+  var target = mids[Math.floor(mids.length/2)];
+  items.forEach(function(i){
+    var dy = target - i.inkMid; // kladné = posun dolů (na obrazovce)
+    var tx = (Math.abs(i.dx)>0.3) ? "translateX("+i.dx.toFixed(2)+"px)" : "";
+    var ty = (Math.abs(dy)>0.3) ? "translateY("+dy.toFixed(2)+"px)" : "";
+    i.el.style.transform = (tx+" "+ty).trim();
+  });
+}
+if(document.fonts && document.fonts.ready){ document.fonts.ready.then(centerTabIcons); }
+else { centerTabIcons(); }
 </script>
 
 </body>
