@@ -584,6 +584,8 @@
     text-transform:uppercase;letter-spacing:.5px;margin:2px 2px 8px;
   }
   .lit-count b{color:var(--accent);font-weight:700;}
+  .lit-search-row{display:flex;align-items:center;gap:8px;}
+  .lit-search-row .free-search{flex:1;min-width:0;}
   .lit-fav-toggle{
     flex-shrink:0;width:44px;height:36px;border-radius:10px;cursor:pointer;
     background:var(--surface);border:1px solid var(--border);color:var(--dim);
@@ -616,13 +618,19 @@
     -webkit-user-select:text;user-select:text;box-sizing:border-box;
   }
   #litText:focus{outline:none;border-color:var(--accent);}
+  .lit-sheet-toggles{display:flex;gap:10px;margin:12px 0;}
   .lit-sheet-star{
     display:flex;align-items:center;gap:8px;cursor:pointer;
-    font-size:13px;color:var(--dim);margin:12px 0;
+    font-size:13px;color:var(--dim);
+    padding:6px 12px;border-radius:10px;border:1px solid transparent;
   }
   .lit-sheet-star .st{font-size:22px;line-height:1;color:var(--dim);}
   .lit-sheet-star.on .st{color:var(--accent);}
   .lit-sheet-star.on{color:var(--text);}
+  /* očíčko je emoji (nejde přebarvit textem), on-stav odlišíme pillem */
+  .lit-sheet-seen .st{filter:grayscale(1);opacity:.55;}
+  .lit-sheet-seen.on .st{filter:none;opacity:1;}
+  .lit-sheet-seen.on{background:var(--surface2);border-color:var(--border);color:var(--text);}
   .lit-toggle-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px;}
   .lit-mini-toggle{
     background:var(--surface);border:1px solid var(--border);border-radius:10px;
@@ -786,8 +794,9 @@
   <section class="page" id="secLitanie">
     <div class="track" id="trackLitanie">
       <div class="panel">
-        <div class="free-search-row">
+        <div class="free-search-row lit-search-row">
           <input type="text" id="litSearch" class="free-search" placeholder="Hledat v litániích…" autocomplete="off">
+          <button type="button" id="litFavQuick" class="lit-fav-toggle" title="Jen oblíbené">☆</button>
         </div>
         <div class="free-filter-row" id="litFilterBar"></div>
         <div class="lit-count" id="litCount"></div>
@@ -807,7 +816,7 @@
   <button class="tab active" data-sec="1"><span class="ic">✓</span><span class="tl">Tasks</span></button>
   <button class="tab" data-sec="2"><span class="ic">↻</span><span class="tl">Habits</span></button>
   <button class="tab" data-sec="3"><span class="ic">☆</span><span class="tl">Free</span></button>
-  <button class="tab" data-sec="5"><span class="ic">🕯</span><span class="tl">Litánie</span></button>
+  <button class="tab" data-sec="5"><span class="ic">❝</span><span class="tl">Litánie</span></button>
   <button class="tab" data-sec="4"><span class="ic">◉</span><span class="tl">Move</span></button>
 </nav>
 
@@ -849,7 +858,10 @@
       <input type="range" id="litPrio" min="1" max="5" value="2">
       <span class="prio-val" id="litPrioVal">2</span>
     </div>
-    <div class="lit-sheet-star" id="litFavToggle"><span class="st">☆</span><span>Oblíbená</span></div>
+    <div class="lit-sheet-toggles">
+      <div class="lit-sheet-star" id="litFavToggle"><span class="st">☆</span><span>Oblíbená</span></div>
+      <div class="lit-sheet-star lit-sheet-seen" id="litSeenToggle"><span class="st">👁</span><span>Shlédnuto</span></div>
+    </div>
     <div style="margin-bottom:10px">
       <label>Témata</label>
       <div class="tag-chips" id="litTemataChips"></div>
@@ -959,11 +971,10 @@
       <button class="btn btn-primary" id="btnExport">Exportovat zálohu (JSON)</button>
       <button class="btn btn-ghost" id="btnImport">Načíst zálohu ze souboru</button>
       <button class="btn btn-danger" id="btnClearOv" style="margin-top:0">Vymazat historii úkolů</button>
-      <button class="btn btn-ghost" id="btnImportLit">Importovat litánie (jednorázově)</button>
+      <button class="btn btn-ghost" id="btnRefreshMove">Znovu načíst Move data z GitHubu</button>
       <button class="btn btn-ghost" id="setClose">Zavřít</button>
     </div>
     <input type="file" id="fileImport" accept="application/json,.json" style="display:none">
-    <input type="file" id="fileImportLit" accept="application/json,.json" style="display:none">
   </div>
 </div>
 
@@ -1058,7 +1069,7 @@ function blankState(){
     //  litOverlay[id] = částečné přepisy základních vět, litNew = uživatelem přidané věty
     litBase:[], litTemata:[], litCasti:[],
     litOverlay:{}, litNew:[],
-    litFilter:{ temata:[], casti:[], prioMin:1, fav:false, noTags:false, expanded:false, search:"" }
+    litFilter:{ temata:[], casti:[], prioMin:1, fav:false, unseen:false, noTags:false, expanded:false, search:"" }
   };
 }
 
@@ -1290,13 +1301,14 @@ function normalize(o){
         };
       });
   }
-  s.litFilter = { temata:[], casti:[], prioMin:1, fav:false, noTags:false, expanded:false, search:"" };
+  s.litFilter = { temata:[], casti:[], prioMin:1, fav:false, unseen:false, noTags:false, expanded:false, search:"" };
   if(o.litFilter && typeof o.litFilter==="object"){
     var lf = o.litFilter;
     if(Array.isArray(lf.temata)) s.litFilter.temata = lf.temata.filter(function(t){ return typeof t==="string"; });
     if(Array.isArray(lf.casti)) s.litFilter.casti = lf.casti.filter(function(t){ return typeof t==="string"; });
     if(typeof lf.prioMin==="number" && lf.prioMin>=1 && lf.prioMin<=5) s.litFilter.prioMin = Math.round(lf.prioMin);
     s.litFilter.fav = !!lf.fav;
+    s.litFilter.unseen = !!lf.unseen;
     s.litFilter.noTags = !!lf.noTags;
     s.litFilter.expanded = !!lf.expanded;
     if(typeof lf.search==="string") s.litFilter.search = lf.search.slice(0,100);
@@ -2960,29 +2972,6 @@ document.getElementById("btnClearOv").onclick = function(){
     toast("Historie úkolů vymazána.");
   });
 };
-// Jednorázový import litanie.json z disku. Data zůstanou v localStorage (+ export).
-document.getElementById("btnImportLit").onclick = function(){ document.getElementById("fileImportLit").click(); };
-document.getElementById("fileImportLit").onchange = function(e){
-  var file = e.target.files[0]; if(!file) return;
-  var reader = new FileReader();
-  reader.onload = function(){
-    try{
-      var d = JSON.parse(reader.result);
-      if(!d || !Array.isArray(d.litanie)) throw new Error("bad");
-      var msg = state.litBase.length
-        ? "Přepsat základní litánie novým souborem? Tvoje úpravy (oblíbené, smazané, editace) zůstanou napojené přes id."
-        : "Naimportovat "+d.litanie.length+" litánií do appky?";
-      askConfirm(msg, "Importovat", function(){
-        var n = importLitanie(d);
-        closeSettings();
-        toast("Naimportováno "+n+" litánií. 🥥");
-      });
-    }catch(err){ toast("Tohle nevypadá jako litanie.json."); }
-    document.getElementById("fileImportLit").value = "";
-  };
-  reader.readAsText(file);
-};
-
 /* ---------- navigace: taby = sekce (0..3), swipe/pager = Check<->Přehled (globální) ---------- */
 var SEC_PAGES  = ["secProgress","secTasks","secNavyky","secVolno","secMove","secLitanie"];
 var SEC_TRACKS = ["trackProgress","trackTasks","trackNavyky","trackVolno","trackMove","trackLitanie"];
@@ -3219,6 +3208,23 @@ function fetchMoveData(){
     .catch(function(){});
 }
 
+// Ruční refresh z ⚙ Data: stáhne aktuální move_data.json z Pages a přepíše lokální
+// dny. Na rozdíl od tichého auto-syncu při startu dává hlášku (i při selhání), ať
+// Bob ví, že se to fakt naklaplo (typicky po ruční editaci jsonu na GitHubu).
+document.getElementById("btnRefreshMove").onclick = function(){
+  var btn = this, orig = btn.textContent;
+  btn.disabled = true; btn.textContent = "Načítám…";
+  fetch("move_data.json?t="+Date.now(), {cache:"no-store"})
+    .then(function(r){ if(!r.ok) throw new Error("http"); return r.json(); })
+    .then(function(arr){
+      if(!Array.isArray(arr) || !arr.length) throw new Error("empty");
+      importMoveData(arr, false); // importMoveData samo hlásí "Naimportováno N dní"
+      closeSettings();
+    })
+    .catch(function(){ toast("Načtení Move dat selhalo (offline / soubor chybí?)."); })
+    .finally(function(){ btn.disabled = false; btn.textContent = orig; });
+};
+
 /* ================= LITÁNIE ================= */
 // Zdroj = litanie.json (read-only, v gitu). Změny žijí v state.litOverlay / state.litNew.
 var LIT_BASE = [], LIT_TEMATA = [], LIT_CASTI = [], LIT_LOADED = false;
@@ -3269,13 +3275,14 @@ function litEffective(){
       casti: (o && o.casti!=null) ? o.casti : b.casti,
       priorita: (o && o.priorita!=null) ? o.priorita : b.priorita,
       oblibena: (o && o.oblibena!=null) ? o.oblibena : b.oblibena,
+      videno: (o && o.videno!=null) ? o.videno : !!b.videno,
       aktivni: (o && o.aktivni!=null) ? o.aktivni : b.aktivni,
       _new: false
     });
   });
   (state.litNew||[]).forEach(function(n){
     out.push({ id:n.id, text:n.text, temata:n.temata, casti:n.casti,
-      priorita:n.priorita, oblibena:n.oblibena, aktivni:n.aktivni!==false, _new:true });
+      priorita:n.priorita, oblibena:n.oblibena, videno:!!n.videno, aktivni:n.aktivni!==false, _new:true });
   });
   return out;
 }
@@ -3294,6 +3301,7 @@ function matchesLitSearch(l, search){
 }
 function matchesLitFilter(l, f){
   if(f.fav && !l.oblibena) return false;
+  if(f.unseen && l.videno) return false;
   if(f.noTags && (l.temata.length || l.casti.length)) return false;
   if(f.temata.length && !l.temata.some(function(t){ return f.temata.indexOf(t)>=0; })) return false;
   if(f.casti.length && !l.casti.some(function(t){ return f.casti.indexOf(t)>=0; })) return false;
@@ -3323,10 +3331,21 @@ function litFilterActiveCount(){
   n += f.temata.length + f.casti.length;
   if(f.prioMin>1) n++;
   if(f.fav) n++;
+  if(f.unseen) n++;
   if(f.noTags) n++;
   return n;
 }
-function refreshLit(){ renderLitFilterBar(); renderLitList(); }
+function renderLitFavQuick(){
+  var b = document.getElementById("litFavQuick");
+  if(!b) return;
+  var on = state.litFilter.fav;
+  b.classList.toggle("on", on);
+  b.textContent = on ? "★" : "☆";
+}
+document.getElementById("litFavQuick").onclick = function(){
+  state.litFilter.fav = !state.litFilter.fav; save(); refreshLit();
+};
+function refreshLit(){ renderLitFavQuick(); renderLitFilterBar(); renderLitList(); }
 
 function renderLitCount(){
   var el = document.getElementById("litCount");
@@ -3363,9 +3382,9 @@ function renderLitList(){
   render.forEach(function(l){
     html +=
       '<div class="lit-card" data-id="'+litEsc(l.id)+'">'+
-        '<button class="lit-star'+(l.oblibena?" on":"")+'" data-act="fav" aria-label="Oblíbená">'+(l.oblibena?"★":"☆")+'</button>'+
-        '<div class="lit-text" data-act="edit">'+litEsc(l.text)+'</div>'+
         '<span class="lit-prio">P'+l.priorita+'</span>'+
+        '<div class="lit-text" data-act="edit">'+litEsc(l.text)+'</div>'+
+        '<button class="lit-star'+(l.oblibena?" on":"")+'" data-act="fav" aria-label="Oblíbená">'+(l.oblibena?"★":"☆")+'</button>'+
       '</div>';
   });
   if(v.shown.length > CAP){
@@ -3398,16 +3417,6 @@ function renderLitFilterBar(){
   head.innerHTML = '<span>Filtr</span>'+(cnt?'<span class="ff-count">'+cnt+'</span>':'')+'<span class="ff-chev">›</span>';
   head.onclick = function(){ f.expanded = !f.expanded; save(); renderLitFilterBar(); };
   box.appendChild(head);
-
-  // rychlá volba Oblíbené (vždy viditelná vedle filtru)
-  var favBtn = document.createElement("button");
-  favBtn.type = "button";
-  favBtn.className = "lit-fav-toggle"+(f.fav?" on":"");
-  favBtn.textContent = f.fav ? "★" : "☆";
-  favBtn.title = "Jen oblíbené";
-  favBtn.onclick = function(){ f.fav = !f.fav; save(); refreshLit(); };
-  wrap.appendChild(favBtn);
-
   if(!f.expanded) return;
 
   var body = document.createElement("div"); body.className = "ff-body";
@@ -3458,6 +3467,13 @@ function renderLitFilterBar(){
   noTags.textContent = "Bez tagů";
   noTags.onclick = function(){ f.noTags = !f.noTags; save(); renderLitFilterBar(); renderLitList(); };
   tRow.appendChild(noTags);
+
+  var unseen = document.createElement("button");
+  unseen.type = "button";
+  unseen.className = "lit-mini-toggle"+(f.unseen?" on":"");
+  unseen.textContent = "👁 Neviděné";
+  unseen.onclick = function(){ f.unseen = !f.unseen; save(); renderLitFilterBar(); renderLitList(); };
+  tRow.appendChild(unseen);
   body.appendChild(tRow);
 
   var foot = document.createElement("div"); foot.className = "ff-foot";
@@ -3465,7 +3481,7 @@ function renderLitFilterBar(){
   reset.type = "button"; reset.className = "ff-reset"; reset.textContent = "Reset";
   reset.onclick = function(e){
     e.stopPropagation();
-    f.temata = []; f.casti = []; f.prioMin = 1; f.fav = false; f.noTags = false;
+    f.temata = []; f.casti = []; f.prioMin = 1; f.fav = false; f.unseen = false; f.noTags = false;
     save(); renderLitFilterBar(); renderLitList();
   };
   var close = document.createElement("button");
@@ -3485,7 +3501,7 @@ document.addEventListener("pointerdown", function(e){
 });
 
 /* ---- editační sheet ---- */
-var litEditId = null, litEditNew = false, litEditFav = false;
+var litEditId = null, litEditNew = false, litEditFav = false, litEditSeen = false;
 var litEditTemata = [], litEditCasti = [];
 var litPrioInp = document.getElementById("litPrio"), litPrioVal = document.getElementById("litPrioVal");
 litPrioInp.oninput = function(){ litPrioVal.textContent = litPrioInp.value; };
@@ -3496,6 +3512,10 @@ document.getElementById("litFavToggle").onclick = function(){
   litEditFav = !litEditFav;
   this.classList.toggle("on", litEditFav);
   this.querySelector(".st").textContent = litEditFav ? "★" : "☆";
+};
+document.getElementById("litSeenToggle").onclick = function(){
+  litEditSeen = !litEditSeen;
+  this.classList.toggle("on", litEditSeen);
 };
 function renderLitSheetChips(){
   function fill(wrapId, allTags, selArr, color){
@@ -3528,6 +3548,7 @@ function openLitSheet(id){
     litTextEl.value = l.text;
     litPrioInp.value = l.priorita; litPrioVal.textContent = l.priorita;
     litEditFav = !!l.oblibena;
+    litEditSeen = !!l.videno;
     litEditTemata = l.temata.slice(); litEditCasti = l.casti.slice();
     del.style.display = "block";
   } else {
@@ -3535,11 +3556,13 @@ function openLitSheet(id){
     litTextEl.value = "";
     litPrioInp.value = 2; litPrioVal.textContent = 2;
     litEditFav = false;
+    litEditSeen = false;
     litEditTemata = []; litEditCasti = [];
     del.style.display = "none";
   }
   favT.classList.toggle("on", litEditFav);
   favT.querySelector(".st").textContent = litEditFav ? "★" : "☆";
+  document.getElementById("litSeenToggle").classList.toggle("on", litEditSeen);
   renderLitSheetChips();
   document.getElementById("litScrim").classList.add("open");
   setTimeout(function(){ litTextEl.focus(); litAutoGrow(); }, 100);
@@ -3556,16 +3579,16 @@ document.getElementById("saveLit").onclick = function(){
     if(litEditNew){
       var n = null;
       for(var i=0;i<state.litNew.length;i++) if(state.litNew[i].id===litEditId){ n = state.litNew[i]; break; }
-      if(n){ n.text=text; n.priorita=prio; n.temata=tem; n.casti=cas; n.oblibena=litEditFav; }
+      if(n){ n.text=text; n.priorita=prio; n.temata=tem; n.casti=cas; n.oblibena=litEditFav; n.videno=litEditSeen; }
     } else {
       var ov = state.litOverlay[litEditId] || {};
-      ov.text = text; ov.priorita = prio; ov.temata = tem; ov.casti = cas; ov.oblibena = litEditFav;
+      ov.text = text; ov.priorita = prio; ov.temata = tem; ov.casti = cas; ov.oblibena = litEditFav; ov.videno = litEditSeen;
       state.litOverlay[litEditId] = ov;
     }
   } else {
     state.litNew.push({
       id: "ul"+Date.now()+Math.random().toString(36).slice(2,6),
-      text:text, temata:tem, casti:cas, priorita:prio, oblibena:litEditFav, aktivni:true
+      text:text, temata:tem, casti:cas, priorita:prio, oblibena:litEditFav, videno:litEditSeen, aktivni:true
     });
   }
   save(); closeLitSheet(); refreshLit();

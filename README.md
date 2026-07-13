@@ -385,9 +385,13 @@ sekce Move   — plná automatika, nulová ruční práce
 
 - **Appka strana:** `fetchMoveData()` (volaná v initu) stáhne `move_data.json`
   z Pages a naimportuje `importMoveData(arr, silent=true)` — bez toastu, tiše.
-  Offline/chybějící soubor = ignoruje se, jede z localStorage. **Ruční import už
-  v UI není** (byl v ⚙, odstraněn — auto-fetch ho nahradil). `importMoveData`
-  zůstává jako funkce, jen ho volá auto-fetch.
+  Offline/chybějící soubor = ignoruje se, jede z localStorage. **Ruční import** (nahrání
+  souboru) už v UI není (byl v ⚙, odstraněn — auto-fetch ho nahradil).
+- **Ruční refresh** (⚙ Data → „Znovu načíst Move data z GitHubu", `#btnRefreshMove`):
+  znovu stáhne `move_data.json` z Pages (`?t=`+timestamp cache-busting + `cache:no-store`)
+  a přepíše lokální dny přes `importMoveData(arr, silent=false)` — **s hláškou** (i při
+  selhání). Použití: Bob **ručně upraví json na GitHubu** (např. dopíše vzdálenost k
+  aktivitě spuštěné jako Cardio místo Walk), počká na Pages deploy, pak v appce refreshne.
 - **Agregace dne** (ve skriptu): kcal/trvání/vzdálenost = součet aktivit dne, tep
   = průměr vážený délkou. Bereme **všechny aktivity** (chůze, tenis, plavání…),
   jen ručně **zaznamenané** (Garmin `get_activities`; celodenní kroky bez
@@ -444,14 +448,14 @@ slider priority.
 > od Move (Garmin data = veřejně OK) se litánie do repa nedostanou. Pozor při
 > jakémkoli commitu, ať to tam omylem neproklouzne.
 
-Zdroj se **jednorázově naimportuje z disku** (⚙ Data → „Importovat litánie") do
-localStorage. Odtud data žijí jen v localStorage a v JSON exportu — **jako zbytek
-appky** (návyky/tasky). Čtyři kusy ve `state`:
+Zdroj se **jednorázově naimportoval z disku** do localStorage (import už hotový,
+tlačítko odstraněno — viz níž). Odtud data žijí jen v localStorage a v JSON exportu
+— **jako zbytek appky** (návyky/tasky). Čtyři kusy ve `state`:
 - `litBase[]` — základní věty (z importu). `litTemata[]` / `litCasti[]` = definice
   tagů z hlavičky jsonu. **Toto je jen v localStorage, git to nekryje → zálohovat
   exportem.**
 - `litOverlay[id]` — částečné přepisy základních vět (text/temata/casti/priorita/
-  oblibena/aktivni). Klíč = **string** id. Ukládá se jen změněné pole.
+  oblibena/videno/aktivni). Klíč = **string** id. Ukládá se jen změněné pole.
 - `litNew[]` — uživatelem přidané věty (id `"ul"+timestamp`).
 - `litFilter` — persistovaný stav filtru.
 
@@ -459,11 +463,12 @@ appky** (návyky/tasky). Čtyři kusy ve `state`:
 naplní ze `state` přes `litLoadFromState()` (v initu, místo dřívějšího fetche).
 `LIT_LOADED = LIT_BASE.length>0`.
 
-**Import** (`importLitanie(d)`, volaný z `#btnImportLit` / `#fileImportLit` v ⚙):
-naparsuje `litanie.json`, naplní `state.litBase` + definice tagů, `save()`,
-`litLoadFromState()`. Reimport (nová verze) přepíše base; overlay/litNew drží dál
-(id stabilní). **Import tlačítko je dočasné** — po prvním nasátí se odstraní
-(stejně jako se to udělalo s Garmin importem).
+**Import:** funkce `importLitanie(d)` v kódu **zůstala** (naparsuje `litanie.json`,
+naplní `state.litBase` + definice tagů, `save()`, `litLoadFromState()`, reimport drží
+overlay/litNew přes stabilní id), ale **UI tlačítko `#btnImportLit` už bylo odstraněno**
+— data jsou dávno nasátá v localStorage/exportu (stejně jako se to udělalo s Garmin
+importem). Funkce je tak momentálně bez UI volajícího; kdyby byl potřeba reimport, dá
+se dočasně zavěsit zpět.
 
 **Slití (`litEffective`):** vezme `LIT_BASE`, na každou větu napasuje
 `litOverlay[id]` (přebije základ), přidá `litNew`. Vrací sjednocený seznam s
@@ -476,21 +481,26 @@ disk/localStorage. Viz Bobova paměť „litánie jsou soukromé".
 
 ### 6b. UI a interakce
 
-- **Seznam:** karty `text · hvězdička · P{priorita}`. Klik na text = editace
-  (`openLitSheet`), klik na hvězdičku = toggle oblíbené (`litToggleFav`). Delegace:
-  **jeden** click handler na `#litList` (ne 1254× per karta).
+- **Seznam:** karty `P{priorita} · text · hvězdička` (priorita vlevo, hvězda u pravého
+  kraje). Klik na text = editace (`openLitSheet`), klik na hvězdičku = toggle oblíbené
+  (`litToggleFav`). Delegace: **jeden** click handler na `#litList` (ne 1254× per karta).
 - **Strop vykreslení 300 karet** (`CAP` v `renderLitList`) — stovky `line-clamp`
   karet by sekaly render. Přes 300 se ukáže poznámka „…a dalších N, zúž filtrem".
   Čištění se dělá po dávkách (filtr/search), takže strop nevadí. Řazení: oblíbené
   nahoře → priorita DESC → id ASC.
 - **Filtr** (`renderLitFilterBar`, klon Free): dvě chip skupiny (Témata modré,
-  Části červené), slider priorita-min (1–5), mini-toggle „Bez tagů", Reset, sbalení.
-  Vedle filtru **vždy viditelná rychlá hvězdička** (jen oblíbené). Fulltext
-  (`litSearch`) sdílí fuzzy engine s Free (`normSearchText`/`fuzzyWordMatch`).
+  Části červené), slider priorita-min (1–5), mini-toggly „Bez tagů" a **„👁 Neviděné"**
+  (reverse — ukáže jen položky s `videno=false`, tj. ještě neprošlé), Reset, sbalení.
+  **Rychlá hvězdička** (jen oblíbené, `#litFavQuick`) sedí **vedle keyword searche**
+  (ne ve filter baru), aby měl filtr plnou šířku. Fulltext (`litSearch`) sdílí fuzzy
+  engine s Free (`normSearchText`/`fuzzyWordMatch`).
 - **Editace/přidání** (`litSheet`): `<textarea>` (věty jsou i dlouhé odstavce, max
-  1570 znaků — auto-grow do 40vh), slider priority 1–5, toggle oblíbená, chipy témat
-  a částí. Přidání přes FAB (`openLitSheet(null)`). Ukládání: nová → `litNew.push`,
-  úprava základní → zápis do `litOverlay[id]`, úprava `_new` → mutace objektu.
+  1570 znaků — auto-grow do 40vh), slider priority 1–5, řádek se dvěma toggly —
+  **oblíbená** (☆/★) a **shlédnuto** (👁 očíčko, `#litSeenToggle` → `videno`), chipy
+  témat a částí. Očíčko slouží k **procházení databáze** — po dokončení editace věty
+  ho cvakneš a věta zmizí z filtru „Neviděné". Přidání přes FAB (`openLitSheet(null)`).
+  Ukládání: nová → `litNew.push`, úprava základní → zápis do `litOverlay[id]`, úprava
+  `_new` → mutace objektu.
 - **Mazání = `aktivni:false`** (`litSetAktivni`), ne fyzické smazání — Bob může
   vzít zpět a za půl roku uvidí, co vyházel. Po smazání **undo lišta** (`#undoBar`,
   6 s, tlačítko „Vrátit" → `litSetAktivni(id,true)`, přičemž pokud overlay držel
@@ -549,9 +559,10 @@ fav→overlay, delete+undo, edit→overlay, nová věta→litNew, reload bez fet
 data z localStorage, celý state v exportu), fuzzy search, chip filtry, strop 300,
 undo lišta. Ověřeno, že appka na startu `litanie.json` **nikde nestahuje**
 (žádný síťový request). Screenshot nástroj v prostředí timeoutoval, ale reflow
-6 ms + 0 chyb → appka svižná. Zbývá: **Bob jednorázově naimportuje** `litanie.json`
-z `local/` přes ⚙, pak se import tlačítko odstraní; čištění databáze je na Bobovi
-(dlouhodobě); rotace „piňa dne" odložená (6c).
+6 ms + 0 chyb → appka svižná. Import **už proběhl** (data v localStorage/exportu),
+import tlačítko odstraněno. Přibylo **procházení databáze**: flag `videno` na položce
+(toggle 👁 v editaci) + filtr „👁 Neviděné" na odškrtávání, co Bob ještě neprošel.
+Čištění databáze je na Bobovi (dlouhodobě); rotace „piňa dne" odložená (6c).
 
 **Filozofie dalšího vývoje:** Bob řekl „základ máme, bude to o dolaďování během
 úkolování". Čekej drobné UX úpravy z reálného provozu, ne velké přestavby.
