@@ -3377,8 +3377,9 @@ function renderLitList(){
     return;
   }
   empty.style.display = "none";
-  // Strop vykreslení – stovky line-clamp karet by sekaly. Zbytek se zúží filtrem/hledáním.
-  var CAP = 300;
+  // Strop vykreslení jen jako pojistka proti extrému (desetitisíce karet by při
+  // re-renderu na každý stisk v searchi sekaly). Běžnou DB (~1200) zobrazí celou.
+  var CAP = 5000;
   var render = v.shown.slice(0, CAP);
   var html = "";
   render.forEach(function(l){
