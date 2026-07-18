@@ -336,6 +336,10 @@
     padding:3px 6px;cursor:pointer;flex-shrink:0;
   }
   .picker-del:active{color:var(--missed);}
+  .picker-edit{font-size:14px;}
+  .picker-edit:active{color:var(--accent);}
+  /* systémové backlogy (Done/Future/Wip) nahoře a tučně */
+  .picker-item.sys .picker-label{font-weight:700;}
   .picker-check{
     width:16px;height:16px;border-radius:4px;border:1.5px solid var(--dim);flex-shrink:0;
     margin-right:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#15120E;
@@ -398,11 +402,18 @@
 
   /* --- Check default obrazovka: WiP náhled + kalendář, jedna scroll-plocha --- */
   .wipbar{
-    display:flex;align-items:center;
+    display:flex;align-items:stretch;gap:5px;
     margin:2px 0 7px;
   }
+  /* rychlé volby backlogů vpravo od dropdownu (stejná výška i centr) */
+  .blog-quick{
+    flex-shrink:0;background:var(--surface2);border:1px solid var(--accent);border-radius:8px;
+    color:var(--text);font-family:var(--mono);font-size:11px;padding:0 8px;cursor:pointer;
+    display:flex;align-items:center;
+  }
+  .blog-quick:active{background:var(--accent);color:#15120E;}
   .wip-sel{
-    width:100%;
+    flex:1;min-width:0;
     background:var(--surface2);border:1px solid var(--accent);border-radius:8px;
     color:var(--text);font-family:var(--serif);font-size:15px;padding:9px 32px 9px 12px;
     -webkit-appearance:none;appearance:none;cursor:pointer;
@@ -472,6 +483,9 @@
     background-repeat:no-repeat;background-position:right 12px center;background-size:18px;
   }
   .blog-pick:focus{outline:none;border-color:var(--accent);}
+  /* dva pickery vedle sebe v sheetu úkolu (backlog | projekt) */
+  .pick-row{display:flex;gap:6px;}
+  .pick-row .blog-pick{flex:1;min-width:0;width:auto;}
   .blog-new{
     width:100%;border:1px dashed var(--border);background:none;color:var(--accent);
     border-radius:10px;padding:10px;font-family:var(--sans);font-size:13px;cursor:pointer;margin-bottom:0;
@@ -718,6 +732,10 @@
           <div class="wipbar" id="wipBar">
             <select class="wip-sel" id="wipSelect" style="display:none"></select>
             <button type="button" class="wip-sel fsel-trigger" id="wipSelectBtn" data-target="wipSelect" data-scope="tasks" data-multi="1"></button>
+            <button type="button" class="blog-quick" data-q="wip">WIP</button>
+            <button type="button" class="blog-quick" data-q="SN">SN</button>
+            <button type="button" class="blog-quick" data-q="PSY">PSY</button>
+            <button type="button" class="blog-quick" data-q="PR">PR</button>
           </div>
           <div class="wip-wrap" id="wipPreview"></div>
           <div id="calList"></div>
@@ -942,7 +960,6 @@
     <div class="field-inline">
       <label>Termín</label>
       <div class="seg-row seg-tight" id="utDeadlineSeg">
-        <div class="seg" data-dl="none">Backlog</div>
         <div class="seg" data-dl="today">Dnes</div>
         <div class="seg" data-dl="tomorrow">Zítra</div>
       </div>
@@ -979,8 +996,12 @@
       <input type="date" id="utBouncerDate" class="date-in" style="display:none;margin-bottom:0">
     </div>
 
-    <select class="blog-pick" id="utBacklog" style="display:none"></select>
-    <button type="button" class="blog-pick fsel-trigger" id="utBacklogBtn" data-target="utBacklog" data-scope="tasks"></button>
+    <div class="pick-row">
+      <select class="blog-pick" id="utBacklog" style="display:none"></select>
+      <button type="button" class="blog-pick fsel-trigger" id="utBacklogBtn" data-target="utBacklog" data-scope="tasks"></button>
+      <select class="blog-pick" id="utProject" style="display:none"></select>
+      <button type="button" class="blog-pick fsel-trigger" id="utProjectBtn" data-target="utProject" data-title="Do projektu"></button>
+    </div>
     <div class="btn-row">
       <button class="blog-new" id="utNewBacklog" type="button">+ backlog</button>
       <button class="btn btn-primary" id="utSave">Uložit</button>
@@ -1115,7 +1136,7 @@ function blankState(){
   // hrBase/hrCap dle Bobova režimu — klidový ~55, zátěž ~130)
   return {
     sections:[ {habits:[],log:{}}, {habits:[],log:{}} ],
-    tasks:[], backlogs:["Wip","Done"], utasks:[], daily:{},
+    tasks:[], backlogs:["Wip","Done","Future"], utasks:[], daily:{},
     taskBacklogSel:["Wip"],
     freeFilter:{ tags:{}, durationMin:0, durationMax:16, funMin:1, expanded:false, search:"" },
     // days = data ze syncu (přepisuje import); overrides = ruční přepisy dne, které
@@ -1209,8 +1230,8 @@ function normalize(o){
   }
 
   // ---- NOVÁ úkolová sekce ----
-  // backlogy: Wip a Done jsou vždy garantované a první dva
-  var bl = ["Wip","Done"];
+  // backlogy: Wip, Done a Future jsou vždy garantované a první tři
+  var bl = ["Wip","Done","Future"];
   if(Array.isArray(o.backlogs)){
     o.backlogs.forEach(function(name){
       if(typeof name==="string"){
@@ -2655,9 +2676,15 @@ var utDow = null;       // 0..6 pro weekly/biweekly bouncer
 var utPrioEl = document.getElementById("utPrio"), utPrioValEl = document.getElementById("utPrioVal");
 utPrioEl.oninput = function(){ utPrioValEl.textContent = utPrioEl.value; };
 
-/* deadline segmenty */
+/* deadline segmenty – klik na aktivní segment ho vypne (= zpět do backlogu,
+   segment „Backlog" byl odstraněn: žádný segment + žádné datum = backlog) */
 document.querySelectorAll("#utDeadlineSeg .seg").forEach(function(seg){
   seg.onclick = function(){
+    if(seg.classList.contains("on")){
+      utDL = "none";
+      seg.classList.remove("on");
+      return;
+    }
     utDL = seg.dataset.dl;
     document.querySelectorAll("#utDeadlineSeg .seg").forEach(function(s){ s.classList.toggle("on", s===seg); });
     document.getElementById("utDate").value = "";
@@ -2716,6 +2743,22 @@ function fillBacklogPicker(selected){
   fselSync("utBacklog");
 }
 
+/* picker projektů (Progress) – volba projektu = při uložení se úkol přesune
+   jako nový krok do projektu a zmizí z utasků */
+function fillProjectPicker(){
+  var sel = document.getElementById("utProject");
+  sel.innerHTML = "";
+  var none = document.createElement("option");
+  none.value = ""; none.textContent = "→ projekt…";
+  sel.appendChild(none);
+  sortedTasks().forEach(function(t){
+    var o = document.createElement("option");
+    o.value = t.id; o.textContent = t.name;
+    sel.appendChild(o);
+  });
+  fselSync("utProject");
+}
+
 function openUtSheet(id){
   editingUtId = id || null;
   var del = document.getElementById("utDelete");
@@ -2760,6 +2803,7 @@ function openUtSheet(id){
     fillBacklogPicker(defaultBk);
     del.style.display = "none";
   }
+  fillProjectPicker();
   refreshBouncerUI();
   document.getElementById("utScrim").classList.add("open");
   document.getElementById("utSheet").scrollTop = 0;
@@ -2819,6 +2863,24 @@ document.getElementById("utSave").onclick = function(){
 
   var backlog = document.getElementById("utBacklog").value || "Wip";
 
+  // přesun do projektu (Progress): název se vepíše jako nový krok projektu
+  // a úkol zmizí z utasků (u nového zadání se úkol vůbec nezaloží)
+  var projId = document.getElementById("utProject").value;
+  if(projId){
+    var pj = taskById(projId);
+    if(pj){
+      pj.subtasks.push({
+        id:"s"+Date.now()+Math.random().toString(36).slice(2,6),
+        name:name, weight:5, prio:5, cells:null, done:false
+      });
+      updateTaskCompletedAt(pj);
+      if(editingUtId) state.utasks = state.utasks.filter(function(x){ return x.id!==editingUtId; });
+      save(); closeUtSheet(); renderCheck(); renderTasksPanel(); renderProgresPanel();
+      toast('Přesunuto jako krok do „'+pj.name+'“.');
+      return;
+    }
+  }
+
   if(editingUtId){
     var t = utaskById(editingUtId);
     t.name=name; t.priority=prio; t.date=date; t.repeat=utRep; t.bouncer=bouncer;
@@ -2871,8 +2933,27 @@ function fselSync(selectId){
 /* mazání backlogů: Wip/Done (Tasky) a Free (Free) jsou garantované, nejdou smazat.
    Smazání backlogu smaže i položky, které v něm aktuálně jsou (nedatované úkoly / návyky).
    Datované úkoly, co v něm mají jen domovský backlog, se přesunou do Wip, ať nezmizí z kalendáře. */
+/* přejmenování backlogu: přepíše název v seznamu i na všech úkolech, výběry drží */
+function renameTaskBacklog(oldName, newName){
+  var i = state.backlogs.indexOf(oldName);
+  if(i<0) return;
+  state.backlogs[i] = newName;
+  state.utasks.forEach(function(t){ if(t.backlog===oldName) t.backlog = newName; });
+  if(Array.isArray(state.taskBacklogSel)){
+    state.taskBacklogSel = state.taskBacklogSel.map(function(n){ return n===oldName ? newName : n; });
+  }
+  if(blogCurrent===oldName) blogCurrent = newName;
+  save();
+  renderCheck();
+  if(document.getElementById("utScrim").classList.contains("open")){
+    var cur = document.getElementById("utBacklog").value;
+    fillBacklogPicker(cur===oldName ? newName : cur);
+  }
+  toast("Backlog přejmenován na „"+newName+"“.");
+}
+
 function deleteTaskBacklog(name){
-  if(name==="Wip" || name==="Done") return;
+  if(name==="Wip" || name==="Done" || name==="Future") return;
   state.backlogs = state.backlogs.filter(function(n){ return n!==name; });
   state.utasks = state.utasks.filter(function(t){ return !(t.backlog===name && t.date===null); });
   state.utasks.forEach(function(t){ if(t.backlog===name) t.backlog="Wip"; });
@@ -2892,7 +2973,7 @@ function deleteTaskBacklog(name){
   toast("Backlog „"+name+"“ smazán.");
 }
 var BACKLOG_SCOPES = {
-  tasks: { protectedNames:["Wip","Done"], del:deleteTaskBacklog }
+  tasks: { protectedNames:["Wip","Done","Future"], del:deleteTaskBacklog, ren:renameTaskBacklog }
 };
 
 function fselOpen(selectId, title){
@@ -2902,7 +2983,17 @@ function fselOpen(selectId, title){
   var cfg = BACKLOG_SCOPES[triggerBtn ? triggerBtn.dataset.scope : ""];
   var multi = !!(triggerBtn && triggerBtn.dataset.multi==="1");
   var items = Array.prototype.map.call(sel.options, function(o){ return {value:o.value, text:o.textContent}; });
-  items.sort(function(a,b){ return a.text.localeCompare(b.text,"cs",{sensitivity:"base"}); });
+  // řazení: prázdná hodnota („žádný") první, systémové backlogy (Done/Future/Wip)
+  // nahoře v tomhle pořadí, zbytek abecedně
+  var SYS_BL = ["Done","Future","Wip"];
+  items.sort(function(a,b){
+    var ea = (a.value==="")?0:1, eb = (b.value==="")?0:1;
+    if(ea!==eb) return ea-eb;
+    var sa = SYS_BL.indexOf(a.value), sb = SYS_BL.indexOf(b.value);
+    var pa = (sa>=0)?sa:99, pb = (sb>=0)?sb:99;
+    if(pa!==pb) return pa-pb;
+    return a.text.localeCompare(b.text,"cs",{sensitivity:"base"});
+  });
   var current = sel.value;
   document.getElementById("pickerTitle").textContent = title || "Backlog";
   var working = multi ? taskSelNames().slice() : null;
@@ -2913,7 +3004,8 @@ function fselOpen(selectId, title){
   items.forEach(function(it){
     var row = document.createElement("div");
     var isSel = multi ? (working.indexOf(it.value)>=0) : (it.value===current);
-    row.className = "picker-item" + (multi ? " picker-multi" : "") + (isSel ? " sel" : "");
+    row.className = "picker-item" + (multi ? " picker-multi" : "") + (isSel ? " sel" : "")
+      + ((cfg && SYS_BL.indexOf(it.value)>=0) ? " sys" : "");
     if(multi){
       var chk = document.createElement("span");
       chk.className = "picker-check" + (isSel ? " on" : "");
@@ -2952,6 +3044,21 @@ function fselOpen(selectId, title){
       }
     };
     if(cfg && cfg.protectedNames.indexOf(it.value)===-1){
+      if(cfg.ren){
+        var ed = document.createElement("button");
+        ed.type = "button"; ed.className = "picker-del picker-edit"; ed.textContent = "✎";
+        ed.onclick = function(e){
+          e.stopPropagation();
+          var nn = prompt("Nový název backlogu:", it.text);
+          if(!nn) return;
+          nn = nn.trim();
+          if(!nn || nn===it.value) return;
+          if(state.backlogs.indexOf(nn)>=0){ toast("Backlog „"+nn+"“ už existuje."); return; }
+          cfg.ren(it.value, nn);
+          closePickerSheet();
+        };
+        row.appendChild(ed);
+      }
       var del = document.createElement("button");
       del.type = "button"; del.className = "picker-del"; del.textContent = "✕";
       del.onclick = function(e){
@@ -2983,7 +3090,19 @@ function closePickerSheet(){ document.getElementById("pickerScrim").classList.re
 document.getElementById("pickerCancel").onclick = closePickerSheet;
 document.getElementById("pickerScrim").onclick = function(e){ if(e.target===this) closePickerSheet(); };
 document.querySelectorAll(".fsel-trigger").forEach(function(btn){
-  btn.onclick = function(){ fselOpen(this.dataset.target, "Backlog"); };
+  btn.onclick = function(){ fselOpen(this.dataset.target, this.dataset.title || "Backlog"); };
+});
+
+/* rychlé volby backlogů vedle dropdownu: WIP = Wip backlog,
+   SN/PSY/PR = multi-výběr všech backlogů s daným prefixem názvu */
+document.querySelectorAll("#wipBar .blog-quick").forEach(function(b){
+  b.onclick = function(){
+    var q = b.dataset.q;
+    if(q==="wip"){ openBlogView("Wip"); return; }
+    var names = state.backlogs.filter(function(n){ return n.toUpperCase().indexOf(q)===0; });
+    if(!names.length){ toast("Žádný backlog nezačíná na „"+q+"“."); return; }
+    applyTaskBacklogMulti(names);
+  };
 });
 
 function toast(msg){
