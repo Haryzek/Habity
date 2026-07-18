@@ -150,6 +150,7 @@
     display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;
   }
   .task-head .name{font-family:var(--serif);font-size:16px;flex:1;min-width:0;word-break:break-word;}
+  .task-head .pct{font-family:var(--mono);font-size:12px;color:var(--done);flex-shrink:0;}
   .task-head .task-plus{background:none;border:none;color:var(--dim);font-size:20px;line-height:1;cursor:pointer;flex-shrink:0;padding:2px 6px;}
   .task-head .chev{color:var(--dim);font-size:13px;flex-shrink:0;transition:transform .18s ease;}
   .taskc.open .task-head .chev{transform:rotate(90deg);}
@@ -1988,6 +1989,7 @@ function renderTasksPanel(){
   empty.style.display = ts.length ? "none" : "block";
 
   ts.forEach(function(task){
+    var isDone = task.subtasks.length>0 && taskProgress(task)>=1;
     var c = document.createElement("div");
     c.className = "taskc" + (expanded[task.id] ? " open" : "");
 
@@ -1996,6 +1998,7 @@ function renderTasksPanel(){
     head.innerHTML =
       '<span class="chev">›</span>'+
       '<span class="name"></span>'+
+      (isDone ? '<span class="pct">🍹</span>' : '')+
       '<button class="task-plus" type="button" title="+ krok">+</button>';
     head.querySelector(".name").textContent = task.name;
     head.onclick = function(){
