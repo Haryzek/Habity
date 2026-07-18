@@ -2167,8 +2167,18 @@ function openTaskSheet(id){
   setTimeout(function(){ document.getElementById("taskName").focus(); }, 100);
 }
 function closeTaskSheet(){ document.getElementById("taskScrim").classList.remove("open"); }
+/* přidá prázdný řádek kroku a rovnou do něj hodí kurzor (vysune klávesnici).
+   Obecný helper — používat u KAŽDÉHO „+ krok" tlačítka, i budoucích. */
+function addSubRowFocused(container){
+  var row = makeSubRow();
+  container.appendChild(row);
+  var inp = row.querySelector(".s-name");
+  row.scrollIntoView({block:"nearest"});
+  inp.focus();
+  return row;
+}
 document.getElementById("addSub").onclick = function(){
-  document.getElementById("subRows").appendChild(makeSubRow());
+  addSubRowFocused(document.getElementById("subRows"));
 };
 document.getElementById("cancelTask").onclick = closeTaskSheet;
 document.getElementById("taskScrim").onclick = function(e){ if(e.target===this) closeTaskSheet(); };
