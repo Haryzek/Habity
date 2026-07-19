@@ -254,7 +254,8 @@ stav).
 - **Výpis kroků v rozbalené placce** se řadí `prio` DESC → původní pořadí zadání
   (stable sort). Proporční proužek i Přehled mřížka prio **ignorují** (jedou dál
   na `weight`/`cells`).
-- **Placka projektu** (task-head): malý serif nadpis (13px, nízký padding), vpravo
+- **Placka projektu** (task-head): malý serif nadpis (14px, nízký padding —
+  názvy jsou unifikované na 14px serif napříč sekcemi podle Tasks `.titem`), vpravo
   🍹 když je projekt na 100 %, a **šedé „+"** — otevře editaci projektu a rovnou
   přidá prázdný fokusnutý krok (`openTaskSheet(id, true)`). Priorita/procenta se
   na placce už neukazují.
