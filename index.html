@@ -3212,7 +3212,20 @@ function applyViewToTrack(trackEl, animate){
   if(trackEl.id==="trackMove" || trackEl.id==="trackLitanie"){ trackEl.style.transform="translateX(0)"; return; }
   trackEl.style.transform = "translateX("+(curView===0 ? "0%" : "-50%")+")";
 }
+// Po přepnutí stránky (swipe / tečka / tab) ukázat obsah od shora — jinak
+// nová plocha zdědí scroll té předchozí.
+var _lastPos = null;
+function resetScrollOnPageChange(){
+  var pos = curSection+":"+curView;
+  if(_lastPos === pos) return;
+  _lastPos = pos;
+  window.scrollTo(0,0);
+  document.scrollingElement && (document.scrollingElement.scrollTop = 0);
+  var pg = document.getElementById(SEC_PAGES[curSection]);
+  if(pg) pg.querySelectorAll(".panel").forEach(function(p){ p.scrollTop = 0; });
+}
 function updateUI(){
+  resetScrollOnPageChange();
   SEC_TRACKS.forEach(function(id){ applyViewToTrack(document.getElementById(id), true); });
   SEC_PAGES.forEach(function(id, i){
     document.getElementById(id).classList.toggle("active", i===curSection);
